@@ -304,7 +304,10 @@
                     <h2>Архив сделок</h2>
                     <button class="expand-btn" id="dealsBtn">Показать все</button>
                 </div>
-                <div class="deals-grid" id="dealsGrid"></div>
+                <div class="deals-grid" id="dealsGrid">
+                    <!-- Сделки будут загружаться из Airtable -->
+                    <div class="loading-message">Данные загружаются...</div>
+                </div>
             </div>
 
             <div class="container blog-section">
@@ -312,7 +315,10 @@
                     <h2>Аналитика и прогнозы</h2>
                     <button class="expand-btn" id="blogBtn">Показать все</button>
                 </div>
-                <div class="blog-grid" id="blogGrid"></div>
+                <div class="blog-grid" id="blogGrid">
+                    <!-- Статьи будут загружаться из Airtable -->
+                    <div class="loading-message">Данные загружаются...</div>
+                </div>
             </div>
         </section>
 
@@ -412,6 +418,7 @@
         const OFFSET_FORECAST = 30;
         const OFFSET_DEAL = 0;
 
+        // ВРЕМЕННЫЕ ДАННЫЕ (пока не подключен Airtable)
         const marketEvents = [
             {id:'evt-1',type:'event',date:'2014-12-15',title:'Валютный кризис',desc:'Резкое падение рубля',val:'+25%→-20%',source:'Cian'},
             {id:'evt-2',type:'event',date:'2015-06-01',title:'Пик ипотечных ставок',desc:'Ставка ЦБ 17%',val:'Ставка 20%',source:'ЦБ РФ'},
@@ -432,49 +439,81 @@
             {id:'fc-5',type:'forecast',date:'2029-01-01',title:'Стабилизация',desc:'4-5%',val:'+4-5%',source:'Дом.РФ'},
             {id:'fc-6',type:'forecast',date:'2030-01-01',title:'Долгосрочный рост',desc:'4-6%',val:'+4-6%',source:'Москва 2035'}
         ];
-        const generateDeals = () => {
-            const locations = [
-                {name:'Патриаршие',area:85,rent:75000,price:45},
-                {name:'Сити',area:120,rent:120000,price:80},
-                {name:'Арбат',area:65,rent:55000,price:38},
-                {name:'Хамовники',area:200,rent:150000,price:95},
-                {name:'Замоскворечье',area:95,rent:68000,price:52},
-                {name:'Тверская',area:150,rent:110000,price:75},
-                {name:'Пресня',area:78,rent:62000,price:48},
-                {name:'Дорогомилово',area:110,rent:85000,price:65}
-            ];
-            const deals = [];
-            for(let i=0;i<20;i++) {
-                const year = 2020 + Math.floor(Math.random()*6);
-                const month = Math.floor(Math.random()*12);
-                const loc = locations[i%8];
-                const price = (loc.price * (0.9 + Math.random()*0.3)).toFixed(1);
-                const yearlyIncome = [];
-                let baseRent = loc.rent*12*0.7;
-                for(let y=0;y<=10;y++) {
-                    const growth = 1 + 0.05 + Math.random()*0.05;
-                    baseRent = y===0 ? baseRent : baseRent*growth;
-                    yearlyIncome.push({year:year+y, income:Math.round(baseRent)});
-                }
-                deals.push({
-                    id:`deal-${i}`, type:'deal',
-                    date: new Date(year, month, 10).toISOString(),
-                    title: `ЖК "${loc.name}" Лот #${100+i}`,
-                    val: `${price}M ₽`,
-                    profit: `${(10 + Math.random()*25).toFixed(1)}%`,
-                    yearlyIncome,
-                    details: {
-                        area: loc.area,
-                        rent: loc.rent,
-                        shares: 4,
-                        location: `Москва, ${loc.name}`,
-                        status: i%3===0?'Продано':(i%3===1?'В аренде':'В продаже')
-                    }
-                });
+
+        // ВРЕМЕННЫЕ СДЕЛКИ (для демо, потом будут из Airtable)
+        const tempDeals = [
+            {
+                id:'deal-0', type:'deal',
+                date: new Date(2022, 5, 15).toISOString(),
+                title: 'ЖК "Патриаршие" Лот #101',
+                val: '52M ₽',
+                profit: '+18.5%',
+                yearlyIncome: [
+                    {year:2022, income:2100000},
+                    {year:2023, income:2350000},
+                    {year:2024, income:2580000},
+                    {year:2025, income:2840000},
+                    {year:2026, income:3120000},
+                    {year:2027, income:3430000},
+                    {year:2028, income:3770000},
+                    {year:2029, income:4150000},
+                    {year:2030, income:4560000},
+                    {year:2031, income:5020000},
+                    {year:2032, income:5520000}
+                ],
+                details: {area:85, rent:75000, shares:4, location:'Москва, Патриаршие', status:'В продаже'}
+            },
+            {
+                id:'deal-1', type:'deal',
+                date: new Date(2021, 3, 10).toISOString(),
+                title: 'ЖК "Сити" Лот #102',
+                val: '88M ₽',
+                profit: '+22.3%',
+                yearlyIncome: [
+                    {year:2021, income:3200000},
+                    {year:2022, income:3520000},
+                    {year:2023, income:3870000},
+                    {year:2024, income:4260000},
+                    {year:2025, income:4690000},
+                    {year:2026, income:5160000},
+                    {year:2027, income:5680000},
+                    {year:2028, income:6250000},
+                    {year:2029, income:6870000},
+                    {year:2030, income:7560000},
+                    {year:2031, income:8320000}
+                ],
+                details: {area:120, rent:120000, shares:4, location:'Москва, Сити', status:'В аренде'}
+            },
+            {
+                id:'deal-2', type:'deal',
+                date: new Date(2023, 8, 20).toISOString(),
+                title: 'ЖК "Арбат" Лот #103',
+                val: '42M ₽',
+                profit: '+15.2%',
+                yearlyIncome: [
+                    {year:2023, income:1800000},
+                    {year:2024, income:1980000},
+                    {year:2025, income:2180000},
+                    {year:2026, income:2400000},
+                    {year:2027, income:2640000},
+                    {year:2028, income:2900000},
+                    {year:2029, income:3190000},
+                    {year:2030, income:3510000},
+                    {year:2031, income:3860000},
+                    {year:2032, income:4250000},
+                    {year:2033, income:4670000}
+                ],
+                details: {area:65, rent:55000, shares:4, location:'Москва, Арбат', status:'В продаже'}
             }
-            return deals.sort((a,b)=>new Date(b.date)-new Date(a.date));
-        };
-        const allData = [...marketEvents, ...forecastEvents, ...generateDeals()];
+        ];
+
+        const allData = [...marketEvents, ...forecastEvents, ...tempDeals];
+
+        // Функция для загрузки данных из Airtable (будет реализована позже)
+        async function loadFromAirtable() {
+            // Здесь будет код для подключения к Airtable
+            console.log('Airtable integration coming soon...');
+        }
 
         class Timeline {
             constructor() {
@@ -586,9 +625,8 @@
                 const grid = document.getElementById('dealsGrid');
                 const deals = allData.filter(d=>d.type==='deal');
                 grid.innerHTML = deals.map((deal,i)=>{
-                    const hidden = i>=9?'hidden':'';
                     return `
-                    <div class="deal-card expand-item ${hidden}" data-id="${deal.id}">
+                    <div class="deal-card" data-id="${deal.id}">
                         <div class="deal-image"><img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80" alt=""></div>
                         <div class="deal-content">
                             <div>
@@ -608,19 +646,14 @@
                         </div>
                     </div>`;
                 }).join('');
-                const obs = new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');}),{threshold:0.1});
-                document.querySelectorAll('.deal-card').forEach(c=>obs.observe(c));
                 document.getElementById('dealsBtn').textContent = `Показать все (${deals.length})`;
             }
             renderBlogGrid() {
                 const grid = document.getElementById('blogGrid');
                 const articles = [...marketEvents,...forecastEvents];
                 grid.innerHTML = articles.map((a,i)=>{
-                    const hidden = i>=9?'hidden':'';
-                    return `<div class="blog-card expand-item ${hidden}"><div class="blog-date">${new Date(a.date).toLocaleDateString('ru-RU')}</div><div class="blog-title">${a.title}</div><div class="blog-excerpt">${a.desc.substring(0,100)}...</div></div>`;
+                    return `<div class="blog-card"><div class="blog-date">${new Date(a.date).toLocaleDateString('ru-RU')}</div><div class="blog-title">${a.title}</div><div class="blog-excerpt">${a.desc.substring(0,100)}...</div></div>`;
                 }).join('');
-                const obs = new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');}),{threshold:0.1});
-                document.querySelectorAll('.blog-card').forEach(c=>obs.observe(c));
                 document.getElementById('blogBtn').textContent = `Показать все (${articles.length})`;
             }
             bindEvents() {
@@ -672,26 +705,9 @@
                     const left = i*PIXELS_PER_YEAR;
                     html += `<div class="deal-timeline-node node-year" style="left:${left}px"><div class="timeline-node-tooltip"><div class="tooltip-title">${data.year}</div><div class="tooltip-desc">💰 Доход: ${data.income.toLocaleString()} ₽</div></div></div>`;
                 }
-                const relevant = allData.filter(item=>{
-                    if(item.type==='deal'&&item.id!==dealId) return false;
-                    const year = new Date(item.date).getFullYear();
-                    return year>=startYear && year<=startYear+10;
-                });
-                relevant.forEach(item=>{
-                    const itemDate = new Date(item.date);
-                    const yearDiff = itemDate.getFullYear()-startYear;
-                    const monthFrac = itemDate.getMonth()/12;
-                    const pos = (yearDiff+monthFrac)*PIXELS_PER_YEAR;
-                    const typeClass = item.type==='event'?'node-event':'node-forecast';
-                    html += `<div class="deal-timeline-node ${typeClass}" style="left:${pos}px" onclick="showDealNodeDetails('${item.id}')"><div class="timeline-node-tooltip"><div class="tooltip-title">${item.title}</div><div class="tooltip-desc">${item.val||''}</div></div></div>`;
-                });
                 html += '</div>';
                 container.innerHTML = html;
             }
-        }
-        function showDealNodeDetails(itemId) {
-            const item = allData.find(d=>d.id===itemId);
-            if(item && timelineInstance) timelineInstance.showDetails(item);
         }
 
         function navigateTo(pageId) {
@@ -710,7 +726,7 @@
             const btn = document.getElementById(`${section}Btn`);
             const items = document.querySelectorAll(`#${section}Grid .expand-item`);
             const expanded = btn.classList.contains('expanded');
-            items.forEach((item,i)=>{ if(i>=9) item.classList.toggle('hidden', expanded); });
+            // Пока просто меняем текст кнопки, без скрытия
             btn.classList.toggle('expanded');
             btn.textContent = expanded ? `Показать все (${items.length})` : `Скрыть (${items.length})`;
         }
