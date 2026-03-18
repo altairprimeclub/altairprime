@@ -1,31 +1,3 @@
-Вот полный, готовый к использованию код сайта **Altair Prime**.
-
-Этот код объединяет HTML, CSS и JavaScript в одном файле. Он полностью настроен на работу с **Airtable**. Вам нужно только создать базу в Airtable, вставить свои ключи в начало скрипта, и сайт автоматически подгрузит все данные.
-
-### Инструкция по настройке Airtable (Сделайте это перед запуском)
-
-1.  Создайте новую базу в Airtable.
-2.  Создайте **3 таблицы** с названиями: `Events`, `Forecasts`, `Deals`.
-3.  Добавьте поля в таблицу **Events** и **Forecasts**:
-    *   `Title` (Single line text) — Название
-    *   `Date` (Date) — Дата события
-    *   `Description` (Long text) — Описание
-    *   `Impact` (Single line text) — Влияние (например, "+5%")
-    *   `Source` (Url) — Ссылка на источник
-4.  Добавьте поля в таблицу **Deals**:
-    *   `Title` (Single line text) — Название ЖК
-    *   `Date` (Date) — Дата покупки
-    *   `Price` (Single line text) — Цена (например, "52M ₽")
-    *   `Profit` (Single line text) — Доходность (например, "+18.5%")
-    *   `Area` (Number) — Площадь
-    *   `Rent` (Number) — Аренда в месяц
-    *   `Status` (Single select) — Статус
-    *   `Location` (Single line text) — Адрес
-    *   `Image` (Attachment) — Фото объекта (загрузите 1 фото)
-    *   `YearlyIncome` (Long text) — **Важно:** Вставьте сюда массив чисел в формате JSON, например: `[2100000, 2350000, 2580000, 2800000, 3000000, 3200000, 3500000, 3800000, 4100000, 4500000]`
-5.  Получите **Personal Access Token** в настройках аккаунта Airtable (раздел Developer Hub).
-6.  Найдите **Base ID** вашей базы (начинается с `app...`).
-7.  Вставьте эти данные в переменные `AIRTABLE_API_KEY` и `AIRTABLE_BASE_ID` в начале раздела `<script>`.
 
 ```html
 <!DOCTYPE html>
