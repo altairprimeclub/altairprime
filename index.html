@@ -78,6 +78,8 @@
         .hero { height:80vh; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; }
         .hero h1 { font-size:clamp(2rem,5vw,4rem); margin-bottom:20px; background:linear-gradient(135deg, #fff, var(--primary-blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
         .hero p { color:var(--text-muted); max-width:600px; margin-bottom:40px; }
+        .scroll-indicator { animation:bounce 2s infinite; opacity:0.7; }
+        @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(10px);} }
 
         .timeline-section { margin-bottom:60px; }
         .timeline-legend { text-align:center; margin-bottom:20px; }
@@ -221,6 +223,8 @@
         .result-value { font-size:1.5rem; font-family:var(--font-display); }
 
         .mobile-menu-btn { display:none; background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer; }
+        .expand-btn { background:rgba(0,210,255,0.1); border:1px solid var(--primary-blue); color:var(--primary-blue); padding:10px 20px; border-radius:6px; cursor:pointer; transition:0.3s; }
+        .expand-btn:hover { background:var(--primary-blue); color:#000; }
 
         @media (max-width:768px) {
             .hero h1 { font-size:2.5rem; }
@@ -261,11 +265,11 @@
                 <h1>Космические инвестиции</h1>
                 <p>Altair Prime Club — элитная недвижимость Москвы. Прозрачность данных. Космическая доходность.</p>
                 <a onclick="navigateTo('projects')" class="btn">Изучить проекты</a>
-            </div>
-            <div class="scroll-indicator" style="margin-top:40px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" stroke-width="2">
-                    <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
-                </svg>
+                <div class="scroll-indicator" style="margin-top:40px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" stroke-width="2">
+                        <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+                    </svg>
+                </div>
             </div>
         </section>
 
@@ -302,7 +306,7 @@
             <div class="container deals-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h2>Архив сделок</h2>
-                    <button class="expand-btn" id="dealsBtn" onclick="toggleDealsSection()">Показать все (3)</button>
+                    <button class="expand-btn" id="dealsBtn" onclick="toggleDealsSection()">Показать все</button>
                 </div>
                 <div class="deals-grid" id="dealsGrid">
                     <div class="loading-message">Загрузка данных...</div>
@@ -312,7 +316,7 @@
             <div class="container blog-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h2>Аналитика и прогнозы</h2>
-                    <button class="expand-btn" id="blogBtn" onclick="toggleBlogSection()">Показать все (16)</button>
+                    <button class="expand-btn" id="blogBtn" onclick="toggleBlogSection()">Показать все</button>
                 </div>
                 <div class="blog-grid" id="blogGrid">
                     <div class="loading-message">Загрузка данных...</div>
@@ -421,76 +425,58 @@
             });
         };
 
-        // ========== 2. КОНСТАНТЫ ТАЙМЛАЙНА ==========
+        // ========== 2. КОНСТАНТЫ ==========
         const MONTHS = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
         const TODAY = new Date('2026-05-15');
         const OFFSET_EVENT = -30;
         const OFFSET_FORECAST = 30;
         const OFFSET_DEAL = 0;
 
-        // ========== 3. ЗАГРУЗКА ДАННЫХ ИЗ AIRTABLE ==========
         let allData = [];
         let deals = [];
 
+        // ========== 3. ЗАГРУЗКА ИЗ AIRTABLE ЧЕРЕЗ API ==========
         async function fetchFromAirtable(table) {
             try {
                 const response = await fetch(`/api/airtable?table=${table}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 return data.records || [];
             } catch (error) {
-                console.error(`Ошибка загрузки из таблицы ${table}:`, error);
+                console.error(`Ошибка загрузки ${table}:`, error);
                 return [];
             }
         }
 
         async function loadAllData() {
             try {
-                const [eventsRecords, forecastsRecords, dealsRecords] = await Promise.all([
+                const [eventsRec, forecastsRec, dealsRec] = await Promise.all([
                     fetchFromAirtable('Events'),
                     fetchFromAirtable('Forecasts'),
                     fetchFromAirtable('Deals')
                 ]);
 
-                const events = eventsRecords.map(r => ({
-                    id: r.id,
-                    type: 'event',
-                    date: r.fields.Date,
-                    title: r.fields.Title,
-                    desc: r.fields.Description || '',
-                    val: r.fields.Impact || '',
-                    source: r.fields.Source || ''
+                const events = eventsRec.map(r => ({
+                    id: r.id, type: 'event', date: r.fields.Date,
+                    title: r.fields.Title, desc: r.fields.Description || '',
+                    val: r.fields.Impact || '', source: r.fields.Source || ''
                 }));
 
-                const forecasts = forecastsRecords.map(r => ({
-                    id: r.id,
-                    type: 'forecast',
-                    date: r.fields.Date,
-                    title: r.fields.Title,
-                    desc: r.fields.Description || '',
-                    val: r.fields.Impact || '',
-                    source: r.fields.Source || ''
+                const forecasts = forecastsRec.map(r => ({
+                    id: r.id, type: 'forecast', date: r.fields.Date,
+                    title: r.fields.Title, desc: r.fields.Description || '',
+                    val: r.fields.Impact || '', source: r.fields.Source || ''
                 }));
 
-                deals = dealsRecords.map(r => ({
-                    id: r.id,
-                    type: 'deal',
-                    date: r.fields.Date,
-                    title: r.fields.Title,
-                    val: r.fields.Price || '',
-                    profit: r.fields.Profit || '',
-                    area: r.fields.Area || 0,
-                    rent: r.fields.Rent || 0,
-                    status: r.fields.Status || 'В продаже',
+                deals = dealsRec.map(r => ({
+                    id: r.id, type: 'deal', date: r.fields.Date,
+                    title: r.fields.Title, val: r.fields.Price || '',
+                    profit: r.fields.Profit || '', area: r.fields.Area || 0,
+                    rent: r.fields.Rent || 0, status: r.fields.Status || 'В продаже',
                     location: r.fields.Location || '',
                     yearlyIncome: (() => {
-                        try {
-                            return JSON.parse(r.fields.YearlyIncome || '[]');
-                        } catch {
-                            return [];
-                        }
+                        try { return JSON.parse(r.fields.YearlyIncome || '[]'); }
+                        catch { return []; }
                     })()
                 }));
 
@@ -498,7 +484,7 @@
                 console.log('Данные загружены:', { events, forecasts, deals });
                 return true;
             } catch (error) {
-                console.error('Ошибка загрузки данных:', error);
+                console.error('Ошибка загрузки:', error);
                 return false;
             }
         }
@@ -625,10 +611,10 @@
             }
         }
 
-        // ========== 5. ОТРИСОВКА КАРТОЧЕК СДЕЛОК ==========
+        // ========== 5. ОТРИСОВКА КАРТОЧЕК ==========
         function renderDealsGrid(limit = 3) {
             const grid = document.getElementById('dealsGrid');
-            if (!deals || deals.length === 0) {
+            if (!deals.length) {
                 grid.innerHTML = '<div class="loading-message">Нет данных о сделках</div>';
                 return;
             }
@@ -659,7 +645,7 @@
         function renderBlogGrid(limit = 6) {
             const grid = document.getElementById('blogGrid');
             const articles = allData.filter(d => d.type === 'event' || d.type === 'forecast');
-            if (articles.length === 0) {
+            if (!articles.length) {
                 grid.innerHTML = '<div class="loading-message">Нет данных</div>';
                 return;
             }
@@ -673,7 +659,6 @@
             document.getElementById('blogBtn').textContent = `Показать все (${articles.length})`;
         }
 
-        // ========== 6. ТАЙМЛАЙН СДЕЛКИ ==========
         function toggleDealTimeline(dealId) {
             const card = document.querySelector(`.deal-card[data-id="${dealId}"]`);
             const container = document.getElementById(`timeline-deal-${dealId}`);
@@ -686,34 +671,33 @@
             card.classList.add('active-timeline');
             if(container.innerHTML === '') {
                 const deal = deals.find(d=>d.id===dealId);
-                if(!deal||!deal.yearlyIncome || deal.yearlyIncome.length === 0) {
+                if(!deal||!deal.yearlyIncome.length) {
                     container.innerHTML = '<div class="loading-message">Нет данных о доходах</div>';
                     return;
                 }
                 const startYear = new Date(deal.date).getFullYear();
-                const PIXELS_PER_YEAR = 120;
+                const PX_YEAR = 120;
                 let html = `<div class="deal-timeline-track"><div class="deal-timeline-line"></div>`;
                 for(let i=0;i<=10;i++) {
                     const year = startYear + i;
-                    const left = i*PIXELS_PER_YEAR;
+                    const left = i*PX_YEAR;
                     html += `<div class="deal-timeline-year" style="left:${left}px"><div class="deal-year-star"></div><span>${year}</span></div>`;
                     for(let m=0;m<12;m++) {
-                        const mleft = left+((m+1)/12)*PIXELS_PER_YEAR;
+                        const mleft = left+((m+1)/12)*PX_YEAR;
                         html += `<div class="deal-timeline-month" style="left:${mleft}px">${MONTHS[m]}</div>`;
                     }
                 }
                 for(let i=0;i<deal.yearlyIncome.length;i++) {
-                    const data = deal.yearlyIncome[i];
-                    if(!data) continue;
-                    const left = i*PIXELS_PER_YEAR;
-                    html += `<div class="deal-timeline-node node-year" style="left:${left}px"><div class="timeline-node-tooltip"><div class="tooltip-title">${startYear + i}</div><div class="tooltip-desc">💰 Доход: ${data.toLocaleString()} ₽</div></div></div>`;
+                    const inc = deal.yearlyIncome[i];
+                    const left = i*PX_YEAR;
+                    html += `<div class="deal-timeline-node node-year" style="left:${left}px"><div class="timeline-node-tooltip"><div class="tooltip-title">${startYear + i}</div><div class="tooltip-desc">💰 Доход: ${inc.toLocaleString()} ₽</div></div></div>`;
                 }
                 html += '</div>';
                 container.innerHTML = html;
             }
         }
 
-        // ========== 7. НАВИГАЦИЯ ==========
+        // ========== 6. НАВИГАЦИЯ ==========
         function navigateTo(pageId) {
             document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
@@ -726,7 +710,7 @@
         }
         function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
 
-        // ========== 8. КНОПКИ "ПОКАЗАТЬ ВСЕ" ==========
+        // ========== 7. КНОПКИ "ПОКАЗАТЬ ВСЕ" ==========
         function toggleDealsSection() {
             const btn = document.getElementById('dealsBtn');
             const expanded = btn.classList.contains('expanded');
@@ -743,7 +727,7 @@
             btn.textContent = expanded ? `Показать все (${articles.length})` : `Скрыть (${articles.length})`;
         }
 
-        // ========== 9. КАЛЬКУЛЯТОР ==========
+        // ========== 8. КАЛЬКУЛЯТОР ==========
         function calculateROI() {
             const price = parseFloat(document.getElementById('calcPrice').value);
             const repair = parseFloat(document.getElementById('calcRepair').value);
@@ -757,12 +741,12 @@
             document.getElementById('resROI').innerText = roi.toFixed(2)+'%';
         }
 
-        // ========== 10. УПРАВЛЕНИЕ ТАЙМЛАЙНОМ ==========
+        // ========== 9. УПРАВЛЕНИЕ ТАЙМЛАЙНОМ ==========
         let timelineInstance;
         function resetTimeline() { if(timelineInstance) { timelineInstance.targetScale=1; timelineInstance.targetOffsetX=0; } }
         function zoomTimeline(delta) { if(timelineInstance) timelineInstance.targetScale = Math.min(4,Math.max(0.5,timelineInstance.targetScale+delta)); }
 
-        // ========== 11. ЗАПУСК ==========
+        // ========== 10. ЗАПУСК ==========
         window.onload = async () => {
             initStarfield();
             await loadAllData();
