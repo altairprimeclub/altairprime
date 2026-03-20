@@ -379,8 +379,7 @@
     <script>
         // ==================== НАСТРОЙКИ AIRTABLE ====================
         // Замените эти переменные на свои после создания базы
-        const AIRTABLE_API_KEY = process.env.ALTTOKEN; // Вставьте ваш Personal Access Token
-        const AIRTABLE_BASE_ID = 'apps9DCFThmIfIwJK'; // Вставьте ваш Base ID
+        
 
         // Таблицы
         const TABLES = {
@@ -503,7 +502,75 @@
         const OFFSET_EVENT = -30;
         const OFFSET_FORECAST = 30;
         const OFFSET_DEAL = 0;
+// ==================== ЗАГРУЗКА ДАННЫХ ИЗ AIRTABLE ====================
+async function fetchFromAirtable(table) {
+  try {
+    const response = await fetch(`/api/airtable?table=${table}`);
+    const data = await response.json();
+    return data.records;
+  } catch (error) {
+    console.error(`Ошибка загрузки из таблицы ${table}:`, error);
+    return [];
+  }
+}
 
+async function loadAllData() {
+  const [eventsRecords, forecastsRecords, dealsRecords] = await Promise.all([
+    fetchFromAirtable('Events'),
+    fetchFromAirtable('Forecasts'),
+    fetchFromAirtable('Deals'),
+  ]);
+  
+  console.log('Events:', eventsRecords);
+  console.log('Forecasts:', forecastsRecords);
+  console.log('Deals:', dealsRecords);
+  
+  // Преобразуем записи в формат для таймлайна
+  const events = eventsRecords.map(r => ({
+    id: r.id,
+    type: 'event',
+    date: r.fields.Date,
+    title: r.fields.Title,
+    desc: r.fields.Description,
+    val: r.fields.Impact,
+    source: r.fields.Source
+  }));
+  
+  const forecasts = forecastsRecords.map(r => ({
+    id: r.id,
+    type: 'forecast',
+    date: r.fields.Date,
+    title: r.fields.Title,
+    desc: r.fields.Description,
+    val: r.fields.Impact,
+    source: r.fields.Source
+  }));
+  
+  const deals = dealsRecords.map(r => ({
+    id: r.id,
+    type: 'deal',
+    date: r.fields.Date,
+    title: r.fields.Title,
+    val: r.fields.Price,
+    profit: r.fields.Profit,
+    area: r.fields.Area,
+    rent: r.fields.Rent,
+    status: r.fields.Status,
+    location: r.fields.Location,
+    yearlyIncome: JSON.parse(r.fields.YearlyIncome || '[]')
+  }));
+  
+  // Сохраняем в глобальные переменные
+  window.allData = [...events, ...forecasts, ...deals];
+  window.deals = deals;
+  
+  // Теперь можно инициализировать таймлайн
+  if (timelineInstance) {
+    timelineInstance.updateData(window.allData);
+    timelineInstance.renderDealsGrid();
+    timelineInstance.renderBlogGrid();
+  }
+}
         class Timeline {
             constructor(data) {
                 this.container = document.getElementById('timelineContainer');
@@ -810,11 +877,16 @@
         }
 
         // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-        window.onload = async () => {
-            initStarfield();
-            await loadAllData();
-            timelineInstance = new Timeline(allData);
-            calculateROI();
+       window.onload = async () => {
+  initStarfield();
+  await loadAllData(); // Ждём загрузки данных из Airtable
+  
+  // Инициализируем таймлайн после получения данных
+  timelineInstance = new Timeline();
+  timelineInstance.renderDealsGrid();
+  timelineInstance.renderBlogGrid();
+  calculateROI();
+};
         };
     </script>
 </body>
