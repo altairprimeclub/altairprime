@@ -467,29 +467,31 @@
                 }));
                 
                 // Преобразуем сделки — ВНИМАНИЕ: используем глобальную переменную deals
-                deals = dealsRec.map(r => {
-                    let yearlyIncome = [];
-                    try {
-                        if (r.fields.YearlyIncome) {
-                            yearlyIncome = JSON.parse(r.fields.YearlyIncome);
-                        }
-                    } catch(e) {
-                        console.warn('Ошибка парсинга YearlyIncome для сделки', r.id, e);
-                    }
-                    return {
-                        id: r.id,
-                        type: 'deal',
-                        date: r.fields.Date || '2024-01-01',
-                        title: r.fields.Title || 'Без названия',
-                        val: r.fields.Price || '0 ₽',
-                        profit: r.fields.Profit || '0%',
-                        area: r.fields.Area || 0,
-                        rent: r.fields.Rent || 0,
-                        status: r.fields.Status || 'В продаже',
-                        location: r.fields.Location || '',
-                        yearlyIncome: yearlyIncome
-                    };
-                });
+                deals = dealsRec
+    .filter(r => r.fields.Title && r.fields.Title !== 'Без названия') // ← добавляем фильтр
+    .map(r => {
+        let yearlyIncome = [];
+        try {
+            if (r.fields.YearlyIncome) {
+                yearlyIncome = JSON.parse(r.fields.YearlyIncome);
+            }
+        } catch(e) {
+            console.warn('Ошибка парсинга YearlyIncome для сделки', r.id, e);
+        }
+        return {
+            id: r.id,
+            type: 'deal',
+            date: r.fields.Date || '2024-01-01',
+            title: r.fields.Title || 'Без названия',
+            val: r.fields.Price || '0 ₽',
+            profit: r.fields.Profit || '0%',
+            area: r.fields.Area || 0,
+            rent: r.fields.Rent || 0,
+            status: r.fields.Status || 'В продаже',
+            location: r.fields.Location || '',
+            yearlyIncome: yearlyIncome
+        };
+    });
                 
                 // Объединяем все данные
                 allData = [...events, ...forecasts, ...deals];
