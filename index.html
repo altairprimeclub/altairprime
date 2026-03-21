@@ -418,20 +418,94 @@
             });
         };
 
-        // ========== 2. КОНСТАНТЫ ТАЙМЛАЙНА ==========
+        // ========== 2. КОНСТАНТЫ ==========
         const MONTHS = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
         const TODAY = new Date('2026-05-15');
         const OFFSET_EVENT = -30;
         const OFFSET_FORECAST = 30;
         const OFFSET_DEAL = 0;
         
-        // Глобальные переменные для данных
+        // Глобальные переменные
         let allData = [];
         let deals = [];
         let events = [];
         let forecasts = [];
+        let settings = {}; // константы из Google Sheets
 
-        // ========== 3. ЗАГРУЗКА ДАННЫХ ИЗ AIRTABLE ==========
+        // ========== 3. ЗАГРУЗКА КОНСТАНТ ИЗ GOOGLE SHEETS ==========
+        // ⚠️ ВСТАВЬТЕ СВОЮ ССЫЛКУ НА GOOGLE SHEETS (лист Settings)
+        const SETTINGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/ВАШ_ID_ЛИСТА/export?format=csv&gid=0';
+        
+        async function loadSettings() {
+            try {
+                const response = await fetch(SETTINGS_SHEET_URL);
+                if (!response.ok) throw new Error('Не удалось загрузить настройки');
+                const csv = await response.text();
+                
+                // Парсим CSV
+                const lines = csv.split('\n');
+                const result = {};
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    const parts = line.split(',');
+                    const key = parts[0]?.trim();
+                    let value = parts[1]?.trim();
+                    
+                    // Преобразуем числа
+                    if (value && !isNaN(value)) {
+                        value = parseFloat(value);
+                    }
+                    
+                    if (key) result[key] = value;
+                }
+                
+                settings = result;
+                console.log('✅ Константы загружены из Google Sheets:', settings);
+                return settings;
+            } catch (error) {
+                console.error('❌ Ошибка загрузки настроек:', error);
+                // Значения по умолчанию (из вашей Excel-таблицы)
+                settings = {
+                    repair_cost_per_m2: 60000,
+                    premium_cost_per_studio: 700000,
+                    insurance_year: 18700,
+                    commission_rate: 0.85,
+                    rent_growth_rate: 0.10,
+                    occupancy_rate: 0.8,
+                    short_months: 9,
+                    long_months: 3,
+                    growth_pessimistic: 0.035,
+                    growth_base: 0.065,
+                    growth_optimistic: 0.11
+                };
+                console.log('⚠️ Используются значения по умолчанию');
+                return settings;
+            }
+        }
+
+        // ========== 4. РАСЧЁТ YEARLYINCOME НА ОСНОВЕ КОНСТАНТ ==========
+        function calculateYearlyIncome(rent, purchaseYear) {
+            const growthRate = settings.rent_growth_rate || 0.10;
+            const commission = settings.commission_rate || 0.85;
+            
+            const yearlyIncome = [];
+            let annualIncome = rent * 12 * commission;
+            
+            for (let i = 0; i <= 10; i++) {
+                const year = purchaseYear + i;
+                if (i === 0) {
+                    yearlyIncome.push({ year, income: Math.round(annualIncome) });
+                } else {
+                    annualIncome = annualIncome * (1 + growthRate);
+                    yearlyIncome.push({ year, income: Math.round(annualIncome) });
+                }
+            }
+            
+            return yearlyIncome;
+        }
+
+        // ========== 5. ЗАГРУЗКА ДАННЫХ ИЗ AIRTABLE ==========
         async function fetchFromAirtable(table) {
             try {
                 const response = await fetch(`/api/airtable?table=${table}`);
@@ -466,37 +540,30 @@
                     val: r.fields.Impact || '', source: r.fields.Source || ''
                 }));
                 
-                // Преобразуем сделки — ВНИМАНИЕ: используем глобальную переменную deals
+                // Преобразуем сделки и рассчитываем YearlyIncome
                 deals = dealsRec
-    .filter(r => r.fields.Title && r.fields.Title !== 'Без названия') // ← добавляем фильтр
-    .map(r => {
-        let yearlyIncome = [];
-        try {
-            if (r.fields.YearlyIncome) {
-                yearlyIncome = JSON.parse(r.fields.YearlyIncome);
-            }
-        } catch(e) {
-            console.warn('Ошибка парсинга YearlyIncome для сделки', r.id, e);
-        }
-        return {
-            id: r.id,
-            type: 'deal',
-            date: r.fields.Date || '2024-01-01',
-            title: r.fields.Title || 'Без названия',
-            val: r.fields.Price || '0 ₽',
-            profit: r.fields.Profit || '0%',
-            area: r.fields.Area || 0,
-            rent: r.fields.Rent || 0,
-            status: r.fields.Status || 'В продаже',
-            location: r.fields.Location || '',
-            yearlyIncome: yearlyIncome
-        };
-    });
+                    .filter(r => r.fields.Title && r.fields.Title !== 'Без названия' && r.fields.Title.trim() !== '')
+                    .map(r => {
+                        const purchaseYear = r.fields.Date ? new Date(r.fields.Date).getFullYear() : new Date().getFullYear();
+                        const rent = r.fields.Rent || 0;
+                        
+                        return {
+                            id: r.id,
+                            type: 'deal',
+                            date: r.fields.Date || '2024-01-01',
+                            title: r.fields.Title || 'Без названия',
+                            val: r.fields.Price || '0 ₽',
+                            profit: r.fields.Profit || '0%',
+                            area: r.fields.Area || 0,
+                            rent: rent,
+                            status: r.fields.Status || 'В продаже',
+                            location: r.fields.Location || '',
+                            yearlyIncome: calculateYearlyIncome(rent, purchaseYear)
+                        };
+                    });
                 
-                // Объединяем все данные
                 allData = [...events, ...forecasts, ...deals];
                 
-                // Логируем результат
                 console.log('✅ Данные загружены из Airtable:');
                 console.log('📊 Событий:', events.length);
                 console.log('📈 Прогнозов:', forecasts.length);
@@ -510,7 +577,7 @@
             }
         }
 
-        // ========== 4. КЛАСС ТАЙМЛАЙН ==========
+        // ========== 6. КЛАСС ТАЙМЛАЙН ==========
         class Timeline {
             constructor() {
                 this.container = document.getElementById('timelineContainer');
@@ -632,7 +699,7 @@
             }
         }
 
-        // ========== 5. ОТРИСОВКА КАРТОЧЕК ==========
+        // ========== 7. ОТРИСОВКА КАРТОЧЕК ==========
         function renderDealsGrid(limit = null) {
             const grid = document.getElementById('dealsGrid');
             const showAll = (limit === null || limit >= deals.length);
@@ -649,7 +716,10 @@
                     <div class="deal-image"><img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80" alt=""></div>
                     <div class="deal-content">
                         <div>
-                            <div class="deal-header-info"><span class="deal-date">${new Date(deal.date).toLocaleDateString('ru-RU')}</span><span style="color:var(--green-blue)">${deal.profit}</span></div>
+                            <div class="deal-header-info">
+                                <span class="deal-date">${deal.date ? new Date(deal.date).toLocaleDateString('ru-RU') : 'Дата не указана'}</span>
+                                <span style="color:var(--green-blue)">${deal.profit}</span>
+                            </div>
                             <div class="deal-title">${deal.title}</div>
                             <div class="deal-stats">
                                 <div class="deal-stat-item"><span class="deal-stat-label">Цена</span><span class="deal-stat-value">${deal.val}</span></div>
@@ -747,14 +817,14 @@
                 for(let i=0;i<deal.yearlyIncome.length;i++) {
                     const inc = deal.yearlyIncome[i];
                     const left = i*PX_YEAR;
-                    html += `<div class="deal-timeline-node node-year" style="left:${left}px"><div class="timeline-node-tooltip"><div class="tooltip-title">${startYear + i}</div><div class="tooltip-desc">💰 Доход: ${inc.toLocaleString()} ₽</div></div></div>`;
+                    html += `<div class="deal-timeline-node node-year" style="left:${left}px"><div class="timeline-node-tooltip"><div class="tooltip-title">${startYear + i}</div><div class="tooltip-desc">💰 Доход: ${inc.income.toLocaleString()} ₽</div></div></div>`;
                 }
                 html += '</div>';
                 container.innerHTML = html;
             }
         }
 
-        // ========== 6. НАВИГАЦИЯ И КНОПКИ ==========
+        // ========== 8. НАВИГАЦИЯ И КНОПКИ ==========
         function navigateTo(pageId) {
             document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
@@ -805,8 +875,9 @@
             const repair = parseFloat(document.getElementById('calcRepair').value);
             const shares = parseFloat(document.getElementById('calcShares').value);
             const rent = parseFloat(document.getElementById('calcRent').value);
+            const commission = settings.commission_rate || 0.85;
             const total = price+repair;
-            const monthly = (rent*shares)*0.85;
+            const monthly = (rent*shares)*commission;
             const roi = ((monthly*12)/total)*100;
             document.getElementById('resTotal').innerText = total.toLocaleString()+' ₽';
             document.getElementById('resMonthly').innerText = Math.round(monthly/shares).toLocaleString()+' ₽';
@@ -817,14 +888,15 @@
         function resetTimeline() { if(timelineInstance) { timelineInstance.targetScale=1; timelineInstance.targetOffsetX=0; } }
         function zoomTimeline(delta) { if(timelineInstance) timelineInstance.targetScale = Math.min(4,Math.max(0.5,timelineInstance.targetScale+delta)); }
 
-        // ========== 7. ЗАПУСК ==========
+        // ========== 9. ЗАПУСК ==========
         window.onload = async () => {
             initStarfield();
-            await loadAllData(); // Загружаем данные из Airtable
+            await loadSettings();      // сначала загружаем константы
+            await loadAllData();       // потом загружаем данные из Airtable
             timelineInstance = new Timeline();
-            renderDealsGrid(3);   // Показываем первые 3 сделки
-            renderEventsGrid(6);  // Показываем первые 6 событий
-            renderForecastsGrid(6); // Показываем первые 6 прогнозов
+            renderDealsGrid(3);
+            renderEventsGrid(6);
+            renderForecastsGrid(6);
             calculateROI();
         };
     </script>
