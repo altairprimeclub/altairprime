@@ -430,11 +430,11 @@
         let deals = [];
         let events = [];
         let forecasts = [];
-        let settings = {}; // константы из Google Sheets
+        let settings = {};
 
         // ========== 3. ЗАГРУЗКА КОНСТАНТ ИЗ GOOGLE SHEETS ==========
-        // ⚠️ ВСТАВЬТЕ СВОЮ ССЫЛКУ НА GOOGLE SHEETS (лист Settings)
-        const SETTINGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3B5AaxMdrjoI3RQHmY2N9xMBgcQ7PL0YabCMOVtxzcWXz6jCip-Vix8VB2wdDx7-3H3-RAMsqeJ_c/pubhtml';
+        // ⚠️ ВСТАВЬТЕ ВАШУ ССЫЛКУ НА ЛИСТ Settings (CSV)
+        const SETTINGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1PVx1dfME3yrOk_p79fdis7O11vpjURL4W5fasqWylxo/edit?gid=114192626#gid=114192626';
         
         async function loadSettings() {
             try {
@@ -442,7 +442,6 @@
                 if (!response.ok) throw new Error('Не удалось загрузить настройки');
                 const csv = await response.text();
                 
-                // Парсим CSV
                 const lines = csv.split('\n');
                 const result = {};
                 for (let i = 1; i < lines.length; i++) {
@@ -451,12 +450,9 @@
                     const parts = line.split(',');
                     const key = parts[0]?.trim();
                     let value = parts[1]?.trim();
-                    
-                    // Преобразуем числа
                     if (value && !isNaN(value)) {
                         value = parseFloat(value);
                     }
-                    
                     if (key) result[key] = value;
                 }
                 
@@ -465,26 +461,36 @@
                 return settings;
             } catch (error) {
                 console.error('❌ Ошибка загрузки настроек:', error);
-                // Значения по умолчанию (из вашей Excel-таблицы)
                 settings = {
                     repair_cost_per_m2: 60000,
                     premium_cost_per_studio: 700000,
                     insurance_year: 18700,
+                    cleaning_per_studio: 96000,
+                    laundry_per_studio: 64000,
+                    utilities_per_m2_month: 110,
+                    telecom_per_studio_month: 500,
+                    marketing_per_studio_year: 20000,
+                    compensation_rate: 0.05,
                     commission_rate: 0.85,
+                    agency_fee_per_studio: 500000,
+                    lawyer_fee: 100000,
+                    agent_commission_per_studio: 100000,
+                    manager_commission_per_studio: 100000,
+                    purchase_fee_rate: 0.03,
                     rent_growth_rate: 0.10,
-                    occupancy_rate: 0.8,
+                    occupancy_rate: 0.80,
                     short_months: 9,
                     long_months: 3,
-                    growth_pessimistic: 0.035,
-                    growth_base: 0.065,
-                    growth_optimistic: 0.11
+                    growth_scenario_pessimistic: 0.035,
+                    growth_scenario_base: 0.065,
+                    growth_scenario_optimistic: 0.11
                 };
                 console.log('⚠️ Используются значения по умолчанию');
                 return settings;
             }
         }
 
-        // ========== 4. РАСЧЁТ YEARLYINCOME НА ОСНОВЕ КОНСТАНТ ==========
+        // ========== 4. РАСЧЁТ YEARLYINCOME ==========
         function calculateYearlyIncome(rent, purchaseYear) {
             const growthRate = settings.rent_growth_rate || 0.10;
             const commission = settings.commission_rate || 0.85;
@@ -501,7 +507,6 @@
                     yearlyIncome.push({ year, income: Math.round(annualIncome) });
                 }
             }
-            
             return yearlyIncome;
         }
 
@@ -526,23 +531,25 @@
                     fetchFromAirtable('Deals')
                 ]);
                 
-                // Преобразуем события
+                // События
                 events = eventsRec.map(r => ({
                     id: r.id, type: 'event', date: r.fields.Date,
                     title: r.fields.Title, desc: r.fields.Description || '',
                     val: r.fields.Impact || '', source: r.fields.Source || ''
                 }));
                 
-                // Преобразуем прогнозы
+                // Прогнозы
                 forecasts = forecastsRec.map(r => ({
                     id: r.id, type: 'forecast', date: r.fields.Date,
                     title: r.fields.Title, desc: r.fields.Description || '',
                     val: r.fields.Impact || '', source: r.fields.Source || ''
                 }));
                 
-                // Преобразуем сделки и рассчитываем YearlyIncome
+                // Сделки — фильтруем только с заполненными полями
                 deals = dealsRec
                     .filter(r => r.fields.Title && r.fields.Title !== 'Без названия' && r.fields.Title.trim() !== '')
+                    .filter(r => r.fields.Rent && r.fields.Rent > 0)
+                    .filter(r => r.fields.Area && r.fields.Area > 0)
                     .map(r => {
                         const purchaseYear = r.fields.Date ? new Date(r.fields.Date).getFullYear() : new Date().getFullYear();
                         const rent = r.fields.Rent || 0;
@@ -551,10 +558,10 @@
                             id: r.id,
                             type: 'deal',
                             date: r.fields.Date || '2024-01-01',
-                            title: r.fields.Title || 'Без названия',
+                            title: r.fields.Title,
                             val: r.fields.Price || '0 ₽',
                             profit: r.fields.Profit || '0%',
-                            area: r.fields.Area || 0,
+                            area: r.fields.Area,
                             rent: rent,
                             status: r.fields.Status || 'В продаже',
                             location: r.fields.Location || '',
@@ -568,7 +575,7 @@
                 console.log('📊 Событий:', events.length);
                 console.log('📈 Прогнозов:', forecasts.length);
                 console.log('🏢 Сделок:', deals.length);
-                console.log('Сделки:', deals);
+                if (deals.length > 0) console.table(deals);
                 
                 return true;
             } catch (error) {
@@ -891,8 +898,8 @@
         // ========== 9. ЗАПУСК ==========
         window.onload = async () => {
             initStarfield();
-            await loadSettings();      // сначала загружаем константы
-            await loadAllData();       // потом загружаем данные из Airtable
+            await loadSettings();
+            await loadAllData();
             timelineInstance = new Timeline();
             renderDealsGrid(3);
             renderEventsGrid(6);
