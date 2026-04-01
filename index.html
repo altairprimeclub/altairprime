@@ -877,7 +877,7 @@
                 if (benefitsDiv) {
                     benefitsDiv.innerHTML = item.benefits ? `<strong>🎯 Выгода для ALTAIR PRIME:</strong><br>${item.benefits}` : '';
                 }
-                document.getElementById('detailSource').innerHTML = `📌 Источник: ${item.source}`;
+                document.getElementById('detailSource').innerHTML = `📌 Источник: ${makeTextLinksClickable(item.source)}`;
                 panel.classList.add('active');
                 panel.scrollIntoView({behavior:'smooth',block:'nearest'});
             }
@@ -1013,7 +1013,7 @@
                     <div class="info-date" style="color:var(--green-blue)">${new Date(ev.date).toLocaleDateString('ru-RU')}</div>
                     <div class="info-title">${ev.title}</div>
                     <div class="info-excerpt">${ev.shortDesc}</div>
-                    <div class="info-full">${ev.fullDesc}</div>
+                    <div class="info-full">${ev.fullDesc}<br><br><strong>📌 Источник:</strong> ${makeTextLinksClickable(ev.source)}</div>
                     ${ev.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${ev.benefits}</div>` : ''}
                     <button class="info-toggle-btn" onclick="toggleCardDescription('${ev.id}', 'event'); event.stopPropagation();">Читать далее ↓</button>
                 </div>
@@ -1039,7 +1039,7 @@
                     <div class="info-date" style="color:var(--red-blue)">${new Date(fc.date).toLocaleDateString('ru-RU')}</div>
                     <div class="info-title">${fc.title}</div>
                     <div class="info-excerpt">${fc.shortDesc}</div>
-                    <div class="info-full">${fc.fullDesc}</div>
+                    <div class="info-full">${fc.fullDesc}<br><br><strong>📌 Источник:</strong> ${makeTextLinksClickable(fc.source)}</div>
                     ${fc.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${fc.benefits}</div>` : ''}
                     <button class="info-toggle-btn" onclick="toggleCardDescription('${fc.id}', 'forecast'); event.stopPropagation();">Читать далее ↓</button>
                 </div>
