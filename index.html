@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
+        /* ========== ОСНОВНЫЕ СТИЛИ (без изменений, как в последней версии) ========== */
         :root {
             --bg-deep: #000000;
             --bg-card: #0a0a0a;
@@ -433,8 +434,8 @@
         let settings = {};
 
         // ========== 3. ЗАГРУЗКА КОНСТАНТ ИЗ GOOGLE SHEETS ==========
-        // ⚠️ ВСТАВЬТЕ ВАШУ ССЫЛКУ НА ЛИСТ Settings (CSV)
-       const SETTINGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQej5JHY9Yl3-cyq_3UfCuy2-iSTSJ4vz0yftxDWD04m231xiJmeVIE46BcbK1ZzHdChPSf0fc_jUqp/pub?gid=114192626&single=true&output=csv';
+        // ВСТАВЬТЕ ВАШУ ССЫЛКУ НА ЛИСТ Settings (CSV)
+        const SETTINGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQej5JHY9Yl3-cyq_3UfCuy2-iSTSJ4vz0yftxDWD04m231xiJmeVIE46BcbK1ZzHdChPSf0fc_jUqp/pub?output=csv&gid=ВАШ_GID';
         
         async function loadSettings() {
             try {
@@ -532,20 +533,38 @@
                 ]);
                 
                 // События
-                events = eventsRec.map(r => ({
-                    id: r.id, type: 'event', date: r.fields.Date,
-                    title: r.fields.Title, desc: r.fields.Description || '',
-                    val: r.fields.Impact || '', source: r.fields.Source || ''
-                }));
+                events = eventsRec.map(r => {
+                    const fullDesc = r.fields.Description || '';
+                    const shortDesc = fullDesc.length > 120 ? fullDesc.substring(0, 120) + '...' : fullDesc;
+                    return {
+                        id: r.id,
+                        type: 'event',
+                        date: r.fields.Date,
+                        title: r.fields.Title,
+                        shortDesc: shortDesc,
+                        fullDesc: fullDesc,
+                        val: r.fields.Impact || '',
+                        source: r.fields.Source || ''
+                    };
+                });
                 
                 // Прогнозы
-                forecasts = forecastsRec.map(r => ({
-                    id: r.id, type: 'forecast', date: r.fields.Date,
-                    title: r.fields.Title, desc: r.fields.Description || '',
-                    val: r.fields.Impact || '', source: r.fields.Source || ''
-                }));
+                forecasts = forecastsRec.map(r => {
+                    const fullDesc = r.fields.Description || '';
+                    const shortDesc = fullDesc.length > 120 ? fullDesc.substring(0, 120) + '...' : fullDesc;
+                    return {
+                        id: r.id,
+                        type: 'forecast',
+                        date: r.fields.Date,
+                        title: r.fields.Title,
+                        shortDesc: shortDesc,
+                        fullDesc: fullDesc,
+                        val: r.fields.Impact || '',
+                        source: r.fields.Source || ''
+                    };
+                });
                 
-                // Сделки — фильтруем только с заполненными полями
+                // Сделки
                 deals = dealsRec
                     .filter(r => r.fields.Title && r.fields.Title !== 'Без названия' && r.fields.Title.trim() !== '')
                     .filter(r => r.fields.Rent && r.fields.Rent > 0)
@@ -575,7 +594,7 @@
                 console.log('📊 Событий:', events.length);
                 console.log('📈 Прогнозов:', forecasts.length);
                 console.log('🏢 Сделок:', deals.length);
-                if (deals.length > 0) console.table(deals);
+                if (events.length) console.table(events.map(e => ({ title: e.title, date: e.date, short: e.shortDesc.substring(0, 50) })));
                 
                 return true;
             } catch (error) {
@@ -655,10 +674,19 @@
                     node.className = `timeline-node node-${item.type}`;
                     node.style.left = `${x}px`;
                     node.style.top = `calc(50% + ${y}px)`;
+                    
+                    // Тултип с кратким описанием
                     const tooltip = document.createElement('div');
                     tooltip.className = 'timeline-node-tooltip';
-                    tooltip.innerHTML = `<div class="tooltip-title">${item.title}</div><div class="tooltip-desc">${item.val||''}</div>`;
+                    let tooltipText = '';
+                    if (item.type === 'event' || item.type === 'forecast') {
+                        tooltipText = item.shortDesc || '';
+                    } else if (item.type === 'deal') {
+                        tooltipText = item.val || '';
+                    }
+                    tooltip.innerHTML = `<div class="tooltip-title">${item.title}</div><div class="tooltip-desc">${tooltipText}</div>`;
                     node.appendChild(tooltip);
+                    
                     node.onclick = (e) => {
                         e.stopPropagation();
                         if(item.type === 'deal') {
@@ -683,7 +711,7 @@
                 document.getElementById('detailDate').innerText = new Date(item.date).toLocaleDateString('ru-RU',{year:'numeric',month:'long'});
                 document.getElementById('detailTitle').innerText = item.title;
                 document.getElementById('detailValue').innerText = item.val;
-                document.getElementById('detailDesc').innerHTML = item.desc;
+                document.getElementById('detailDesc').innerHTML = item.fullDesc || '';
                 document.getElementById('detailSource').innerHTML = `📌 Источник: ${item.source}`;
                 panel.classList.add('active');
                 panel.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -762,7 +790,7 @@
                 <div class="info-card">
                     <div class="info-date" style="color:var(--green-blue)">${new Date(ev.date).toLocaleDateString('ru-RU')}</div>
                     <div class="info-title">${ev.title}</div>
-                    <div class="info-excerpt">${ev.desc.substring(0,100)}...</div>
+                    <div class="info-excerpt">${ev.fullDesc.substring(0,100)}...</div>
                 </div>
             `).join('');
             
@@ -785,7 +813,7 @@
                 <div class="info-card">
                     <div class="info-date" style="color:var(--red-blue)">${new Date(fc.date).toLocaleDateString('ru-RU')}</div>
                     <div class="info-title">${fc.title}</div>
-                    <div class="info-excerpt">${fc.desc.substring(0,100)}...</div>
+                    <div class="info-excerpt">${fc.fullDesc.substring(0,100)}...</div>
                 </div>
             `).join('');
             
