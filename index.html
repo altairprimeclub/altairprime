@@ -125,9 +125,8 @@
         .detail-content h3 { font-size:1.5rem; margin-bottom:10px; }
         .detail-value { font-size:2rem; color:var(--primary-blue); margin:10px 0; }
         .detail-desc { line-height:1.6; color:var(--text-muted); }
-        /* Ссылки в описании детали */
         .detail-desc a { 
-            color:var(--primary-blue) !important; 
+            color:var(--primary-blue); 
             text-decoration:underline; 
             font-weight:600;
         }
@@ -138,7 +137,7 @@
         }
         .detail-benefits { margin-top:20px; padding-top:15px; border-top:1px solid rgba(0,210,255,0.1); color:var(--green-blue); }
         .detail-benefits a { 
-            color:var(--green-blue) !important; 
+            color:var(--green-blue); 
             text-decoration:underline; 
             font-weight:600;
         }
@@ -148,6 +147,8 @@
             text-shadow:0 0 10px var(--green-blue-glow);
         }
         .detail-source { margin-top:15px; font-size:0.8rem; color:#666; }
+        .detail-source a { color:var(--primary-blue); text-decoration:underline; }
+        .detail-source a:hover { text-decoration:none; }
         .deals-section { margin-top:60px; }
         .deals-grid { display:flex; flex-direction:column; gap:30px; }
         .deal-card {
@@ -184,21 +185,30 @@
         }
         .deal-toggle-btn:hover { background:var(--primary-blue); color:#000; box-shadow:0 0 15px var(--cyan-glow); }
         .deal-excerpt { color:var(--text-muted); line-height:1.6; }
-        /* Ссылки в сделках */
-        .deal-excerpt a, .deal-full a { 
-            color:var(--primary-blue) !important; 
+        .deal-excerpt a { 
+            color:var(--primary-blue); 
             text-decoration:underline; 
             font-weight:600;
         }
-        .deal-excerpt a:hover, .deal-full a:hover { 
+        .deal-excerpt a:hover { 
             color:var(--cyan-glow); 
             text-decoration:none; 
             text-shadow:0 0 10px var(--cyan-glow);
         }
         .deal-full { color:var(--text-muted); line-height:1.6; display:none; }
+        .deal-full a { 
+            color:var(--primary-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .deal-full a:hover { 
+            color:var(--cyan-glow); 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--cyan-glow);
+        }
         .deal-benefits { color:var(--green-blue); margin-top:10px; display:none; line-height:1.6; }
         .deal-benefits a { 
-            color:var(--green-blue) !important; 
+            color:var(--green-blue); 
             text-decoration:underline; 
             font-weight:600;
         }
@@ -276,22 +286,30 @@
         .info-date { font-size:0.8rem; margin-bottom:8px; font-weight:bold; }
         .info-title { font-size:1.1rem; margin:10px 0; }
         .info-excerpt { color:var(--text-muted); line-height:1.6; }
-        /* Ссылки в событиях и прогнозах - ВАЖНО: !important */
-        .info-excerpt a, .info-full a { 
-            color:var(--primary-blue) !important; 
+        .info-excerpt a { 
+            color:var(--primary-blue); 
             text-decoration:underline; 
             font-weight:600;
-            cursor: pointer;
         }
-        .info-excerpt a:hover, .info-full a:hover { 
+        .info-excerpt a:hover { 
             color:var(--cyan-glow); 
             text-decoration:none; 
             text-shadow:0 0 10px var(--cyan-glow);
         }
         .info-full { color:var(--text-muted); line-height:1.6; display:none; }
+        .info-full a { 
+            color:var(--primary-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .info-full a:hover { 
+            color:var(--cyan-glow); 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--cyan-glow);
+        }
         .info-benefits { color:var(--green-blue); margin-top:10px; display:none; line-height:1.6; }
         .info-benefits a { 
-            color:var(--green-blue) !important; 
+            color:var(--green-blue); 
             text-decoration:underline; 
             font-weight:600;
         }
@@ -614,51 +632,42 @@
             }
         }
 
-        // 🔗 УЛУЧШЕННАЯ функция для преобразования ссылок
+        // 🔗 Функция для преобразования текста в кликабельные ссылки
         function makeTextLinksClickable(text) {
             if (!text) return '';
             
-            // 1. Декодируем HTML сущности
+            // Сначала декодируем HTML сущности если они есть
             let processed = text
                 .replace(/&amp;/g, '&')
                 .replace(/&lt;/g, '<')
                 .replace(/&gt;/g, '>')
                 .replace(/&quot;/g, '"');
             
-            // 2. Если уже есть теги <a>, не трогаем
+            // Если текст уже содержит HTML теги <a>, не трогаем их
             if (processed.includes('<a ')) {
                 return processed;
             }
             
-            // 3. Мощный Regex для поиска ссылок:
-            // - http/https
-            // - www.
-            // - домены типа site.com, site.ru, sub.site.org
-            // - telegram channels (@ или t.me)
-            const urlPattern = /(\b(https?:\/\/|www\.)[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b)|(\b(?:t\.me|telegram\.me)\/[a-zA-Z0-9_]+)|(\b[a-z0-9.-]+\.(com|ru|org|net|io|me|biz|info|club|online|site)\b)/gi;
+            // Расширенный regex для распознавания ссылок:
+            const urlPattern = /(\b(https?:\/\/|www\.)[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b)/gi;
             
             processed = processed.replace(urlPattern, (match) => {
                 let url = match;
                 let display = match;
                 
-                // Добавляем протокол если нет
                 if (!url.startsWith('http://') && !url.startsWith('https://')) {
                     if (url.startsWith('www.')) {
                         url = 'https://' + url;
                     } else if (url.includes('@')) {
                         url = 'mailto:' + url;
-                    } else if (url.includes('t.me') || url.includes('telegram.me')) {
-                        url = 'https://' + url;
                     } else {
-                        // Для доменов без www добавляем https
                         url = 'https://' + url;
                     }
                 }
                 
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${display}</a>`;
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:var(--primary-blue);text-decoration:underline;font-weight:600;">${display}</a>`;
             });
             
-            // 4. Переносы строк в <br>
             processed = processed.replace(/\n/g, '<br>');
             
             return processed;
@@ -738,11 +747,6 @@
                 console.log('📊 Событий:', events.length);
                 console.log('📈 Прогнозов:', forecasts.length);
                 console.log('🏢 Сделок:', deals.length);
-                
-                // 🔍 DEBUG: Проверяем, есть ли ссылки в первом событии
-                if (events.length > 0) {
-                    console.log('🔗 Пример описания события (ссылки):', events[0].fullDesc);
-                }
                 
                 return true;
             } catch (error) {
@@ -877,6 +881,7 @@
                 if (benefitsDiv) {
                     benefitsDiv.innerHTML = item.benefits ? `<strong>🎯 Выгода для ALTAIR PRIME:</strong><br>${item.benefits}` : '';
                 }
+                // 🔗 Делаем источник кликабельным
                 document.getElementById('detailSource').innerHTML = `📌 Источник: ${makeTextLinksClickable(item.source)}`;
                 panel.classList.add('active');
                 panel.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -1013,7 +1018,10 @@
                     <div class="info-date" style="color:var(--green-blue)">${new Date(ev.date).toLocaleDateString('ru-RU')}</div>
                     <div class="info-title">${ev.title}</div>
                     <div class="info-excerpt">${ev.shortDesc}</div>
-                    <div class="info-full">${ev.fullDesc}<br><br><strong>📌 Источник:</strong> ${makeTextLinksClickable(ev.source)}</div>
+                    <div class="info-full">
+                        ${ev.fullDesc}<br>
+                        ${ev.source ? `<strong>📌 Источник:</strong> ${makeTextLinksClickable(ev.source)}` : ''}
+                    </div>
                     ${ev.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${ev.benefits}</div>` : ''}
                     <button class="info-toggle-btn" onclick="toggleCardDescription('${ev.id}', 'event'); event.stopPropagation();">Читать далее ↓</button>
                 </div>
@@ -1039,7 +1047,10 @@
                     <div class="info-date" style="color:var(--red-blue)">${new Date(fc.date).toLocaleDateString('ru-RU')}</div>
                     <div class="info-title">${fc.title}</div>
                     <div class="info-excerpt">${fc.shortDesc}</div>
-                    <div class="info-full">${fc.fullDesc}<br><br><strong>📌 Источник:</strong> ${makeTextLinksClickable(fc.source)}</div>
+                    <div class="info-full">
+                        ${fc.fullDesc}<br>
+                        ${fc.source ? `<strong>📌 Источник:</strong> ${makeTextLinksClickable(fc.source)}` : ''}
+                    </div>
                     ${fc.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${fc.benefits}</div>` : ''}
                     <button class="info-toggle-btn" onclick="toggleCardDescription('${fc.id}', 'forecast'); event.stopPropagation();">Читать далее ↓</button>
                 </div>
