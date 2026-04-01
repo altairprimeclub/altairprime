@@ -125,8 +125,9 @@
         .detail-content h3 { font-size:1.5rem; margin-bottom:10px; }
         .detail-value { font-size:2rem; color:var(--primary-blue); margin:10px 0; }
         .detail-desc { line-height:1.6; color:var(--text-muted); }
+        /* Ссылки в описании детали */
         .detail-desc a { 
-            color:var(--primary-blue); 
+            color:var(--primary-blue) !important; 
             text-decoration:underline; 
             font-weight:600;
         }
@@ -137,7 +138,7 @@
         }
         .detail-benefits { margin-top:20px; padding-top:15px; border-top:1px solid rgba(0,210,255,0.1); color:var(--green-blue); }
         .detail-benefits a { 
-            color:var(--green-blue); 
+            color:var(--green-blue) !important; 
             text-decoration:underline; 
             font-weight:600;
         }
@@ -183,30 +184,21 @@
         }
         .deal-toggle-btn:hover { background:var(--primary-blue); color:#000; box-shadow:0 0 15px var(--cyan-glow); }
         .deal-excerpt { color:var(--text-muted); line-height:1.6; }
-        .deal-excerpt a { 
-            color:var(--primary-blue); 
+        /* Ссылки в сделках */
+        .deal-excerpt a, .deal-full a { 
+            color:var(--primary-blue) !important; 
             text-decoration:underline; 
             font-weight:600;
         }
-        .deal-excerpt a:hover { 
+        .deal-excerpt a:hover, .deal-full a:hover { 
             color:var(--cyan-glow); 
             text-decoration:none; 
             text-shadow:0 0 10px var(--cyan-glow);
         }
         .deal-full { color:var(--text-muted); line-height:1.6; display:none; }
-        .deal-full a { 
-            color:var(--primary-blue); 
-            text-decoration:underline; 
-            font-weight:600;
-        }
-        .deal-full a:hover { 
-            color:var(--cyan-glow); 
-            text-decoration:none; 
-            text-shadow:0 0 10px var(--cyan-glow);
-        }
         .deal-benefits { color:var(--green-blue); margin-top:10px; display:none; line-height:1.6; }
         .deal-benefits a { 
-            color:var(--green-blue); 
+            color:var(--green-blue) !important; 
             text-decoration:underline; 
             font-weight:600;
         }
@@ -284,30 +276,22 @@
         .info-date { font-size:0.8rem; margin-bottom:8px; font-weight:bold; }
         .info-title { font-size:1.1rem; margin:10px 0; }
         .info-excerpt { color:var(--text-muted); line-height:1.6; }
-        .info-excerpt a { 
-            color:var(--primary-blue); 
+        /* Ссылки в событиях и прогнозах - ВАЖНО: !important */
+        .info-excerpt a, .info-full a { 
+            color:var(--primary-blue) !important; 
             text-decoration:underline; 
             font-weight:600;
+            cursor: pointer;
         }
-        .info-excerpt a:hover { 
+        .info-excerpt a:hover, .info-full a:hover { 
             color:var(--cyan-glow); 
             text-decoration:none; 
             text-shadow:0 0 10px var(--cyan-glow);
         }
         .info-full { color:var(--text-muted); line-height:1.6; display:none; }
-        .info-full a { 
-            color:var(--primary-blue); 
-            text-decoration:underline; 
-            font-weight:600;
-        }
-        .info-full a:hover { 
-            color:var(--cyan-glow); 
-            text-decoration:none; 
-            text-shadow:0 0 10px var(--cyan-glow);
-        }
         .info-benefits { color:var(--green-blue); margin-top:10px; display:none; line-height:1.6; }
         .info-benefits a { 
-            color:var(--green-blue); 
+            color:var(--green-blue) !important; 
             text-decoration:underline; 
             font-weight:600;
         }
@@ -630,27 +614,28 @@
             }
         }
 
-        // 🔗 УЛУЧШЕННАЯ функция для преобразования URL в кликабельные ссылки
+        // 🔗 УЛУЧШЕННАЯ функция для преобразования ссылок
         function makeTextLinksClickable(text) {
             if (!text) return '';
             
-            // Сначала декодируем HTML сущности если они есть
+            // 1. Декодируем HTML сущности
             let processed = text
                 .replace(/&amp;/g, '&')
                 .replace(/&lt;/g, '<')
                 .replace(/&gt;/g, '>')
                 .replace(/&quot;/g, '"');
             
-            // Если текст уже содержит HTML теги <a>, не трогаем их
+            // 2. Если уже есть теги <a>, не трогаем
             if (processed.includes('<a ')) {
                 return processed;
             }
             
-            // Расширенный regex для распознавания ссылок:
-            // 1. http:// или https://
-            // 2. www.
-            // 3. домены с .com, .ru, .org и т.д.
-            const urlPattern = /(\b(https?:\/\/|www\.)[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b)/gi;
+            // 3. Мощный Regex для поиска ссылок:
+            // - http/https
+            // - www.
+            // - домены типа site.com, site.ru, sub.site.org
+            // - telegram channels (@ или t.me)
+            const urlPattern = /(\b(https?:\/\/|www\.)[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b)|(\b(?:t\.me|telegram\.me)\/[a-zA-Z0-9_]+)|(\b[a-z0-9.-]+\.(com|ru|org|net|io|me|biz|info|club|online|site)\b)/gi;
             
             processed = processed.replace(urlPattern, (match) => {
                 let url = match;
@@ -662,15 +647,18 @@
                         url = 'https://' + url;
                     } else if (url.includes('@')) {
                         url = 'mailto:' + url;
+                    } else if (url.includes('t.me') || url.includes('telegram.me')) {
+                        url = 'https://' + url;
                     } else {
+                        // Для доменов без www добавляем https
                         url = 'https://' + url;
                     }
                 }
                 
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:var(--primary-blue);text-decoration:underline;font-weight:600;">${display}</a>`;
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${display}</a>`;
             });
             
-            // Преобразуем переносы строк в <br>
+            // 4. Переносы строк в <br>
             processed = processed.replace(/\n/g, '<br>');
             
             return processed;
@@ -751,10 +739,9 @@
                 console.log('📈 Прогнозов:', forecasts.length);
                 console.log('🏢 Сделок:', deals.length);
                 
-                // 🔍 DEBUG: проверяем ссылки в первом событии
+                // 🔍 DEBUG: Проверяем, есть ли ссылки в первом событии
                 if (events.length > 0) {
-                    console.log('🔗 Пример описания события:', events[0].fullDesc);
-                    console.log('🔗 Пример Benefits:', events[0].benefits);
+                    console.log('🔗 Пример описания события (ссылки):', events[0].fullDesc);
                 }
                 
                 return true;
