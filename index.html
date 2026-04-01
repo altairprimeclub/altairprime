@@ -124,6 +124,7 @@
         .detail-content h3 { font-size:1.5rem; margin-bottom:10px; }
         .detail-value { font-size:2rem; color:var(--primary-blue); margin:10px 0; }
         .detail-desc { line-height:1.6; color:var(--text-muted); }
+        .detail-benefits { margin-top:20px; padding-top:15px; border-top:1px solid rgba(0,210,255,0.1); color:var(--green-blue); }
         .detail-source { margin-top:15px; font-size:0.8rem; color:#666; }
         .deals-section { margin-top:60px; }
         .deals-grid { display:flex; flex-direction:column; gap:30px; }
@@ -292,6 +293,7 @@
                         <h3 id="detailTitle"></h3>
                         <div class="detail-value" id="detailValue"></div>
                         <div class="detail-desc" id="detailDesc"></div>
+                        <div class="detail-benefits" id="detailBenefits"></div>
                         <div class="detail-source" id="detailSource"></div>
                     </div>
                 </div>
@@ -544,7 +546,8 @@
                         shortDesc: shortDesc,
                         fullDesc: fullDesc,
                         val: r.fields.Impact || '',
-                        source: r.fields.Source || ''
+                        source: r.fields.Source || '',
+                        benefits: r.fields.Benefits || ''
                     };
                 });
                 
@@ -560,7 +563,8 @@
                         shortDesc: shortDesc,
                         fullDesc: fullDesc,
                         val: r.fields.Impact || '',
-                        source: r.fields.Source || ''
+                        source: r.fields.Source || '',
+                        benefits: r.fields.Benefits || ''
                     };
                 });
                 
@@ -712,6 +716,10 @@
                 document.getElementById('detailTitle').innerText = item.title;
                 document.getElementById('detailValue').innerText = item.val;
                 document.getElementById('detailDesc').innerHTML = item.fullDesc || '';
+                const benefitsDiv = document.getElementById('detailBenefits');
+                if (benefitsDiv) {
+                    benefitsDiv.innerHTML = item.benefits ? `<strong>🎯 Выгода для ALTAIR PRIME:</strong><br>${item.benefits}` : '';
+                }
                 document.getElementById('detailSource').innerHTML = `📌 Источник: ${item.source}`;
                 panel.classList.add('active');
                 panel.scrollIntoView({behavior:'smooth',block:'nearest'});
