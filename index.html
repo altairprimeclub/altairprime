@@ -125,9 +125,11 @@
         .detail-content h3 { font-size:1.5rem; margin-bottom:10px; }
         .detail-value { font-size:2rem; color:var(--primary-blue); margin:10px 0; }
         .detail-desc { line-height:1.6; color:var(--text-muted); }
-        .detail-desc a { color:var(--primary-blue); text-decoration:none; }
-        .detail-desc a:hover { text-decoration:underline; }
+        .detail-desc a { color:var(--primary-blue); text-decoration:underline; }
+        .detail-desc a:hover { text-decoration:none; }
         .detail-benefits { margin-top:20px; padding-top:15px; border-top:1px solid rgba(0,210,255,0.1); color:var(--green-blue); }
+        .detail-benefits a { color:var(--green-blue); text-decoration:underline; }
+        .detail-benefits a:hover { text-decoration:none; }
         .detail-source { margin-top:15px; font-size:0.8rem; color:#666; }
         .deals-section { margin-top:60px; }
         .deals-grid { display:flex; flex-direction:column; gap:30px; }
@@ -139,6 +141,7 @@
         .deal-card.active { border-color:var(--blue); box-shadow:0 0 30px var(--blue-glow); }
         .deal-card.expanded .deal-excerpt { display:none; }
         .deal-card.expanded .deal-full { display:block; }
+        .deal-card.expanded .deal-benefits { display:block; }
         .deal-image { width:300px; flex-shrink:0; height:220px; }
         .deal-image img { width:100%; height:100%; object-fit:cover; transition:0.5s; }
         .deal-card:hover .deal-image img { transform:scale(1.05); }
@@ -164,9 +167,14 @@
         }
         .deal-toggle-btn:hover { background:var(--primary-blue); color:#000; box-shadow:0 0 15px var(--cyan-glow); }
         .deal-excerpt { color:var(--text-muted); line-height:1.6; }
+        .deal-excerpt a { color:var(--primary-blue); text-decoration:underline; }
+        .deal-excerpt a:hover { text-decoration:none; }
         .deal-full { color:var(--text-muted); line-height:1.6; display:none; }
-        .deal-full a { color:var(--primary-blue); text-decoration:none; }
-        .deal-full a:hover { text-decoration:underline; }
+        .deal-full a { color:var(--primary-blue); text-decoration:underline; }
+        .deal-full a:hover { text-decoration:none; }
+        .deal-benefits { color:var(--green-blue); margin-top:10px; display:none; line-height:1.6; }
+        .deal-benefits a { color:var(--green-blue); text-decoration:underline; }
+        .deal-benefits a:hover { text-decoration:none; }
         .deal-timeline-container {
             margin-top:20px; padding-top:20px; border-top:1px solid rgba(0,210,255,0.2);
             display:none; animation:slideDown 0.4s ease-out;
@@ -236,10 +244,14 @@
         .info-date { font-size:0.8rem; margin-bottom:8px; font-weight:bold; }
         .info-title { font-size:1.1rem; margin:10px 0; }
         .info-excerpt { color:var(--text-muted); line-height:1.6; }
+        .info-excerpt a { color:var(--primary-blue); text-decoration:underline; }
+        .info-excerpt a:hover { text-decoration:none; }
         .info-full { color:var(--text-muted); line-height:1.6; display:none; }
-        .info-full a { color:var(--primary-blue); text-decoration:none; }
-        .info-full a:hover { text-decoration:underline; }
-        .info-benefits { color:var(--green-blue); margin-top:10px; display:none; }
+        .info-full a { color:var(--primary-blue); text-decoration:underline; }
+        .info-full a:hover { text-decoration:none; }
+        .info-benefits { color:var(--green-blue); margin-top:10px; display:none; line-height:1.6; }
+        .info-benefits a { color:var(--green-blue); text-decoration:underline; }
+        .info-benefits a:hover { text-decoration:none; }
         .info-toggle-btn {
             background:transparent; border:1px solid var(--primary-blue); color:var(--primary-blue);
             padding:5px 15px; border-radius:4px; cursor:pointer; transition:0.3s;
@@ -554,6 +566,16 @@
             }
         }
 
+        // Функция для преобразования URL в кликабельные ссылки
+        function makeTextLinksClickable(text) {
+            if (!text) return '';
+            // Преобразуем http:// и https:// URL в кликабельные ссылки
+            return text.replace(
+                /(https?:\/\/[^\s<]+)/g,
+                '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+            );
+        }
+
         async function loadAllData() {
             try {
                 const [eventsRec, forecastsRec, dealsRec] = await Promise.all([
@@ -570,11 +592,11 @@
                         type: 'event',
                         date: r.fields.Date,
                         title: r.fields.Title,
-                        shortDesc: shortDesc,
-                        fullDesc: fullDesc,
+                        shortDesc: makeTextLinksClickable(shortDesc),
+                        fullDesc: makeTextLinksClickable(fullDesc),
                         val: r.fields.Impact || '',
                         source: r.fields.Source || '',
-                        benefits: r.fields.Benefits || ''
+                        benefits: makeTextLinksClickable(r.fields.Benefits || '')
                     };
                 });
                 
@@ -586,11 +608,11 @@
                         type: 'forecast',
                         date: r.fields.Date,
                         title: r.fields.Title,
-                        shortDesc: shortDesc,
-                        fullDesc: fullDesc,
+                        shortDesc: makeTextLinksClickable(shortDesc),
+                        fullDesc: makeTextLinksClickable(fullDesc),
                         val: r.fields.Impact || '',
                         source: r.fields.Source || '',
-                        benefits: r.fields.Benefits || ''
+                        benefits: makeTextLinksClickable(r.fields.Benefits || '')
                     };
                 });
                 
@@ -615,9 +637,9 @@
                             rent: rent,
                             status: r.fields.Status || 'В продаже',
                             location: r.fields.Location || '',
-                            shortDesc: shortDesc,
-                            fullDesc: fullDesc,
-                            benefits: r.fields.Benefits || '',
+                            shortDesc: makeTextLinksClickable(shortDesc),
+                            fullDesc: makeTextLinksClickable(fullDesc),
+                            benefits: makeTextLinksClickable(r.fields.Benefits || ''),
                             yearlyIncome: calculateYearlyIncome(rent, purchaseYear)
                         };
                     });
@@ -812,26 +834,33 @@
         }
 
         function eventCardClick(e, id) {
-            if (e.target.closest('button') || e.target.closest('a')) return;
+            // Если клик по ссылке - не сворачиваем карточку
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+                e.stopPropagation();
+                return;
+            }
+            if (e.target.closest('button')) return;
             toggleCardDescription(id, 'event');
         }
 
         function forecastCardClick(e, id) {
-            if (e.target.closest('button') || e.target.closest('a')) return;
+            // Если клик по ссылке - не сворачиваем карточку
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+                e.stopPropagation();
+                return;
+            }
+            if (e.target.closest('button')) return;
             toggleCardDescription(id, 'forecast');
         }
 
         function dealCardClick(e, id) {
-            if (e.target.closest('button') || e.target.closest('a')) return;
+            // Если клик по ссылке - не сворачиваем карточку
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+                e.stopPropagation();
+                return;
+            }
+            if (e.target.closest('button')) return;
             toggleDealDescription(id);
-        }
-
-        function makeLinksClickable() {
-            document.querySelectorAll('.info-full a, .deal-full a, .detail-desc a, .tooltip-desc a').forEach(link => {
-                link.addEventListener('click', (e) => e.stopPropagation());
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-            });
         }
 
         // ========== 8. ОТРИСОВКА КАРТОЧЕК ==========
@@ -863,7 +892,7 @@
                             </div>
                             <div class="deal-excerpt">${deal.shortDesc}</div>
                             <div class="deal-full">${deal.fullDesc}</div>
-                            ${deal.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${deal.benefits}</div>` : ''}
+                            ${deal.benefits ? `<div class="deal-benefits"><strong>🎯 Выгода:</strong><br>${deal.benefits}</div>` : ''}
                         </div>
                         <div class="deal-actions">
                             <button class="deal-toggle-btn" onclick="toggleDealDescription('${deal.id}'); event.stopPropagation();">Подробнее ↓</button>
@@ -876,7 +905,6 @@
             
             const btn = document.getElementById('dealsBtn');
             btn.textContent = showAll ? `Скрыть (${deals.length})` : `Показать все (${deals.length})`;
-            makeLinksClickable();
         }
 
         function renderEventsGrid(limit = null) {
@@ -903,7 +931,6 @@
             
             const btn = document.getElementById('eventsBtn');
             btn.textContent = showAll ? `Скрыть (${events.length})` : `Показать все (${events.length})`;
-            makeLinksClickable();
         }
 
         function renderForecastsGrid(limit = null) {
@@ -930,7 +957,6 @@
             
             const btn = document.getElementById('forecastsBtn');
             btn.textContent = showAll ? `Скрыть (${forecasts.length})` : `Показать все (${forecasts.length})`;
-            makeLinksClickable();
         }
 
         function showEventDetails(id) {
