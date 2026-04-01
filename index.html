@@ -112,8 +112,8 @@
         .timeline-node:hover .timeline-node-tooltip { opacity:1; visibility:visible; }
         .tooltip-title { color:#fff; font-weight:600; font-size:0.8rem; margin-bottom:4px; }
         .tooltip-desc { color:var(--text-muted); font-size:0.7rem; line-height:1.3; }
-        .tooltip-desc a { color:var(--primary-blue); text-decoration:none; }
-        .tooltip-desc a:hover { text-decoration:underline; }
+        .tooltip-desc a { color:var(--primary-blue); text-decoration:underline; }
+        .tooltip-desc a:hover { text-decoration:none; }
         .details-panel {
             margin-top:30px; background:var(--bg-card); border:1px solid var(--primary-blue); border-radius:12px;
             padding:25px; display:none; opacity:0; transform:translateY(10px); transition:0.3s;
@@ -125,11 +125,27 @@
         .detail-content h3 { font-size:1.5rem; margin-bottom:10px; }
         .detail-value { font-size:2rem; color:var(--primary-blue); margin:10px 0; }
         .detail-desc { line-height:1.6; color:var(--text-muted); }
-        .detail-desc a { color:var(--primary-blue); text-decoration:underline; }
-        .detail-desc a:hover { text-decoration:none; }
+        .detail-desc a { 
+            color:var(--primary-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .detail-desc a:hover { 
+            color:var(--cyan-glow); 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--cyan-glow);
+        }
         .detail-benefits { margin-top:20px; padding-top:15px; border-top:1px solid rgba(0,210,255,0.1); color:var(--green-blue); }
-        .detail-benefits a { color:var(--green-blue); text-decoration:underline; }
-        .detail-benefits a:hover { text-decoration:none; }
+        .detail-benefits a { 
+            color:var(--green-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .detail-benefits a:hover { 
+            color:#00ffcc; 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--green-blue-glow);
+        }
         .detail-source { margin-top:15px; font-size:0.8rem; color:#666; }
         .deals-section { margin-top:60px; }
         .deals-grid { display:flex; flex-direction:column; gap:30px; }
@@ -167,14 +183,38 @@
         }
         .deal-toggle-btn:hover { background:var(--primary-blue); color:#000; box-shadow:0 0 15px var(--cyan-glow); }
         .deal-excerpt { color:var(--text-muted); line-height:1.6; }
-        .deal-excerpt a { color:var(--primary-blue); text-decoration:underline; }
-        .deal-excerpt a:hover { text-decoration:none; }
+        .deal-excerpt a { 
+            color:var(--primary-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .deal-excerpt a:hover { 
+            color:var(--cyan-glow); 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--cyan-glow);
+        }
         .deal-full { color:var(--text-muted); line-height:1.6; display:none; }
-        .deal-full a { color:var(--primary-blue); text-decoration:underline; }
-        .deal-full a:hover { text-decoration:none; }
+        .deal-full a { 
+            color:var(--primary-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .deal-full a:hover { 
+            color:var(--cyan-glow); 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--cyan-glow);
+        }
         .deal-benefits { color:var(--green-blue); margin-top:10px; display:none; line-height:1.6; }
-        .deal-benefits a { color:var(--green-blue); text-decoration:underline; }
-        .deal-benefits a:hover { text-decoration:none; }
+        .deal-benefits a { 
+            color:var(--green-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .deal-benefits a:hover { 
+            color:#00ffcc; 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--green-blue-glow);
+        }
         .deal-timeline-container {
             margin-top:20px; padding-top:20px; border-top:1px solid rgba(0,210,255,0.2);
             display:none; animation:slideDown 0.4s ease-out;
@@ -244,14 +284,38 @@
         .info-date { font-size:0.8rem; margin-bottom:8px; font-weight:bold; }
         .info-title { font-size:1.1rem; margin:10px 0; }
         .info-excerpt { color:var(--text-muted); line-height:1.6; }
-        .info-excerpt a { color:var(--primary-blue); text-decoration:underline; }
-        .info-excerpt a:hover { text-decoration:none; }
+        .info-excerpt a { 
+            color:var(--primary-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .info-excerpt a:hover { 
+            color:var(--cyan-glow); 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--cyan-glow);
+        }
         .info-full { color:var(--text-muted); line-height:1.6; display:none; }
-        .info-full a { color:var(--primary-blue); text-decoration:underline; }
-        .info-full a:hover { text-decoration:none; }
+        .info-full a { 
+            color:var(--primary-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .info-full a:hover { 
+            color:var(--cyan-glow); 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--cyan-glow);
+        }
         .info-benefits { color:var(--green-blue); margin-top:10px; display:none; line-height:1.6; }
-        .info-benefits a { color:var(--green-blue); text-decoration:underline; }
-        .info-benefits a:hover { text-decoration:none; }
+        .info-benefits a { 
+            color:var(--green-blue); 
+            text-decoration:underline; 
+            font-weight:600;
+        }
+        .info-benefits a:hover { 
+            color:#00ffcc; 
+            text-decoration:none; 
+            text-shadow:0 0 10px var(--green-blue-glow);
+        }
         .info-toggle-btn {
             background:transparent; border:1px solid var(--primary-blue); color:var(--primary-blue);
             padding:5px 15px; border-radius:4px; cursor:pointer; transition:0.3s;
@@ -566,14 +630,50 @@
             }
         }
 
-        // Функция для преобразования URL в кликабельные ссылки
+        // 🔗 УЛУЧШЕННАЯ функция для преобразования URL в кликабельные ссылки
         function makeTextLinksClickable(text) {
             if (!text) return '';
-            // Преобразуем http:// и https:// URL в кликабельные ссылки
-            return text.replace(
-                /(https?:\/\/[^\s<]+)/g,
-                '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-            );
+            
+            // Сначала декодируем HTML сущности если они есть
+            let processed = text
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"');
+            
+            // Если текст уже содержит HTML теги <a>, не трогаем их
+            if (processed.includes('<a ')) {
+                return processed;
+            }
+            
+            // Расширенный regex для распознавания ссылок:
+            // 1. http:// или https://
+            // 2. www.
+            // 3. домены с .com, .ru, .org и т.д.
+            const urlPattern = /(\b(https?:\/\/|www\.)[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b)/gi;
+            
+            processed = processed.replace(urlPattern, (match) => {
+                let url = match;
+                let display = match;
+                
+                // Добавляем протокол если нет
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    if (url.startsWith('www.')) {
+                        url = 'https://' + url;
+                    } else if (url.includes('@')) {
+                        url = 'mailto:' + url;
+                    } else {
+                        url = 'https://' + url;
+                    }
+                }
+                
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:var(--primary-blue);text-decoration:underline;font-weight:600;">${display}</a>`;
+            });
+            
+            // Преобразуем переносы строк в <br>
+            processed = processed.replace(/\n/g, '<br>');
+            
+            return processed;
         }
 
         async function loadAllData() {
@@ -650,6 +750,12 @@
                 console.log('📊 Событий:', events.length);
                 console.log('📈 Прогнозов:', forecasts.length);
                 console.log('🏢 Сделок:', deals.length);
+                
+                // 🔍 DEBUG: проверяем ссылки в первом событии
+                if (events.length > 0) {
+                    console.log('🔗 Пример описания события:', events[0].fullDesc);
+                    console.log('🔗 Пример Benefits:', events[0].benefits);
+                }
                 
                 return true;
             } catch (error) {
@@ -834,7 +940,6 @@
         }
 
         function eventCardClick(e, id) {
-            // Если клик по ссылке - не сворачиваем карточку
             if (e.target.tagName === 'A' || e.target.closest('a')) {
                 e.stopPropagation();
                 return;
@@ -844,7 +949,6 @@
         }
 
         function forecastCardClick(e, id) {
-            // Если клик по ссылке - не сворачиваем карточку
             if (e.target.tagName === 'A' || e.target.closest('a')) {
                 e.stopPropagation();
                 return;
@@ -854,7 +958,6 @@
         }
 
         function dealCardClick(e, id) {
-            // Если клик по ссылке - не сворачиваем карточку
             if (e.target.tagName === 'A' || e.target.closest('a')) {
                 e.stopPropagation();
                 return;
