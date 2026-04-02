@@ -959,7 +959,7 @@
             toggleDealDescription(id);
         }
 
-        // ========== 8. ОТРИСОВКА КАРТОЧЕК ==========
+        // ========== 8. ОТРИСОВКА КАРТОЧЕК (ИСПРАВЛЕНА: ДОБАВЛЕН КЛАСС visible) ==========
         function renderDealsGrid(limit = null) {
             const grid = document.getElementById('dealsGrid');
             const showAll = (limit === null || limit >= deals.length);
@@ -972,7 +972,7 @@
             }
             
             grid.innerHTML = itemsToShow.map(deal => `
-                <div class="deal-card" data-id="${deal.id}" onclick="dealCardClick(event, '${deal.id}')">
+                <div class="deal-card visible" data-id="${deal.id}" onclick="dealCardClick(event, '${deal.id}')">
                     <div class="deal-image"><img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80" alt=""></div>
                     <div class="deal-content">
                         <div>
