@@ -339,6 +339,24 @@
             .nav-links { display:none; position:absolute; top:100%; left:0; width:100%; background:#02040a; flex-direction:column; padding:20px; border-bottom:1px solid var(--primary-blue); }
             .nav-links.active { display:flex; }
             .nav-links.active li a { padding:15px 0; font-size:1.2rem; }
+            .deal-smartbuy {
+    color: var(--primary-blue);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,210,255,0.1);
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+.deal-smartbuy a {
+    color: var(--primary-blue) !important;
+    text-decoration: underline;
+    word-break: break-word;
+}
+.deal-smartbuy a:hover {
+    color: var(--cyan-glow);
+    text-decoration: none;
+    text-shadow: 0 0 10px var(--cyan-glow);
+}
         }
     </style>
 </head>
@@ -733,6 +751,7 @@
                             shortDesc: makeTextLinksClickable(shortDesc),
                             fullDesc: makeTextLinksClickable(fullDesc),
                             benefits: makeTextLinksClickable(r.fields.Benefits || ''),
+                            smartbuy: makeTextLinksClickable(r.fields.SmartBuy || ''),
                             yearlyIncome: calculateYearlyIncome(rent, purchaseYear)
                         };
                     });
@@ -960,75 +979,51 @@
         }
 
         // ========== 8. ОТРИСОВКА КАРТОЧЕК (ИСПРАВЛЕНА: ДОБАВЛЕН КЛАСС visible) ==========
-        function renderDealsGrid(limit = null) {
-            const grid = document.getElementById('dealsGrid');
-            const showAll = (limit === null || limit >= deals.length);
-            const itemsToShow = showAll ? deals : deals.slice(0, limit);
-            
-            if (!deals.length) {
-                grid.innerHTML = '<div class="loading-message">Нет данных о сделках</div>';
-                document.getElementById('dealsBtn').textContent = 'Показать все (0)';
-                return;
-            }
-            
-            grid.innerHTML = itemsToShow.map(deal => `
-                <div class="deal-card visible" data-id="${deal.id}" onclick="dealCardClick(event, '${deal.id}')">
-                    <div class="deal-image"><img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80" alt=""></div>
-                    <div class="deal-content">
-                        <div>
-                            <div class="deal-header-info">
-                                <span class="deal-date">${deal.date ? new Date(deal.date).toLocaleDateString('ru-RU') : 'Дата не указана'}</span>
-                                <span style="color:var(--green-blue)">${deal.profit}</span>
-                            </div>
-                            <div class="deal-title">${deal.title}</div>
-                            <div class="deal-stats">
-                                <div class="deal-stat-item"><span class="deal-stat-label">Цена</span><span class="deal-stat-value">${deal.val}</span></div>
-                                <div class="deal-stat-item"><span class="deal-stat-label">Площадь</span><span class="deal-stat-value">${deal.area} м²</span></div>
-                                <div class="deal-stat-item"><span class="deal-stat-label">Аренда</span><span class="deal-stat-value">${deal.rent.toLocaleString()} ₽</span></div>
-                            </div>
-                            <div class="deal-excerpt">${deal.shortDesc}</div>
-                            <div class="deal-full">${deal.fullDesc}</div>
-                            ${deal.benefits ? `<div class="deal-benefits"><strong>🎯 Выгода:</strong><br>${deal.benefits}</div>` : ''}
-                        </div>
-                        <div class="deal-actions">
-                            <button class="deal-toggle-btn" onclick="toggleDealDescription('${deal.id}'); event.stopPropagation();">Подробнее ↓</button>
-                            <span style="color:${deal.status==='Продано'?'#ff4a6d':'#888'}">${deal.status}</span>
-                        </div>
-                        <div class="deal-timeline-container" id="timeline-deal-${deal.id}"></div>
+   
+
+       function renderDealsGrid(limit = null) {
+    const grid = document.getElementById('dealsGrid');
+    const showAll = (limit === null || limit >= deals.length);
+    const itemsToShow = showAll ? deals : deals.slice(0, limit);
+    
+    if (!deals.length) {
+        grid.innerHTML = '<div class="loading-message">Нет данных о сделках</div>';
+        document.getElementById('dealsBtn').textContent = 'Показать все (0)';
+        return;
+    }
+    
+    grid.innerHTML = itemsToShow.map(deal => `
+        <div class="deal-card visible" data-id="${deal.id}" onclick="dealCardClick(event, '${deal.id}')">
+            <div class="deal-image"><img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80" alt=""></div>
+            <div class="deal-content">
+                <div>
+                    <div class="deal-header-info">
+                        <span class="deal-date">${deal.date ? new Date(deal.date).toLocaleDateString('ru-RU') : 'Дата не указана'}</span>
+                        <span style="color:var(--green-blue)">${deal.profit}</span>
                     </div>
+                    <div class="deal-title">${deal.title}</div>
+                    <div class="deal-stats">
+                        <div class="deal-stat-item"><span class="deal-stat-label">Цена</span><span class="deal-stat-value">${deal.val}</span></div>
+                        <div class="deal-stat-item"><span class="deal-stat-label">Площадь</span><span class="deal-stat-value">${deal.area} м²</span></div>
+                        <div class="deal-stat-item"><span class="deal-stat-label">Аренда</span><span class="deal-stat-value">${deal.rent.toLocaleString()} ₽</span></div>
+                    </div>
+                    <div class="deal-excerpt">${deal.shortDesc}</div>
+                    <div class="deal-full">${deal.fullDesc}</div>
+                    ${deal.benefits ? `<div class="deal-benefits"><strong>🎯 Выгода:</strong><br>${deal.benefits}</div>` : ''}
+                    ${deal.smartbuy ? `<div class="deal-smartbuy"><strong>🧠 Умная покупка:</strong><br>${deal.smartbuy}</div>` : ''}
                 </div>
-            `).join('');
-            
-            const btn = document.getElementById('dealsBtn');
-            btn.textContent = showAll ? `Скрыть (${deals.length})` : `Показать все (${deals.length})`;
-        }
-
-        function renderEventsGrid(limit = null) {
-            const grid = document.getElementById('eventsGrid');
-            const showAll = (limit === null || limit >= events.length);
-            const itemsToShow = showAll ? events : events.slice(0, limit);
-            
-            if (!events.length) {
-                grid.innerHTML = '<div class="loading-message">Нет данных о событиях</div>';
-                document.getElementById('eventsBtn').textContent = 'Показать все (0)';
-                return;
-            }
-            
-            grid.innerHTML = itemsToShow.map(ev => `
-                <div class="info-card" data-id="${ev.id}" data-type="event" onclick="eventCardClick(event, '${ev.id}')">
-                    <div class="info-date" style="color:var(--green-blue)">${new Date(ev.date).toLocaleDateString('ru-RU')}</div>
-                    <div class="info-title">${ev.title}</div>
-                    <div class="info-excerpt">${ev.shortDesc}</div>
-                    <div class="info-full">${ev.fullDesc}<br><br><strong>📌 Источник:</strong> ${makeTextLinksClickable(ev.source)}</div>
-                    ${ev.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${ev.benefits}</div>` : ''}
-                    <button class="info-toggle-btn" onclick="toggleCardDescription('${ev.id}', 'event'); event.stopPropagation();">Читать далее ↓</button>
+                <div class="deal-actions">
+                    <button class="deal-toggle-btn" onclick="toggleDealDescription('${deal.id}'); event.stopPropagation();">Подробнее ↓</button>
+                    <span style="color:${deal.status==='Продано'?'#ff4a6d':'#888'}">${deal.status}</span>
                 </div>
-            `).join('');
-            
-            const btn = document.getElementById('eventsBtn');
-            btn.textContent = showAll ? `Скрыть (${events.length})` : `Показать все (${events.length})`;
-        }
-
+                <div class="deal-timeline-container" id="timeline-deal-${deal.id}"></div>
+            </div>
+        </div>
+    `).join('');
+    
+    const btn = document.getElementById('dealsBtn');
+    btn.textContent = showAll ? `Скрыть (${deals.length})` : `Показать все (${deals.length})`;
+}
         function renderForecastsGrid(limit = null) {
             const grid = document.getElementById('forecastsGrid');
             const showAll = (limit === null || limit >= forecasts.length);
