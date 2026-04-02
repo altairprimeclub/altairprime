@@ -1049,7 +1049,31 @@
             const btn = document.getElementById('forecastsBtn');
             btn.textContent = showAll ? `Скрыть (${forecasts.length})` : `Показать все (${forecasts.length})`;
         }
-
+function renderEventsGrid(limit = null) {
+    const grid = document.getElementById('eventsGrid');
+    const showAll = (limit === null || limit >= events.length);
+    const itemsToShow = showAll ? events : events.slice(0, limit);
+    
+    if (!events.length) {
+        grid.innerHTML = '<div class="loading-message">Нет данных о событиях</div>';
+        document.getElementById('eventsBtn').textContent = 'Показать все (0)';
+        return;
+    }
+    
+    grid.innerHTML = itemsToShow.map(event => `
+        <div class="info-card" data-id="${event.id}" data-type="event" onclick="eventCardClick(event, '${event.id}')">
+            <div class="info-date" style="color:var(--green-blue)">${new Date(event.date).toLocaleDateString('ru-RU')}</div>
+            <div class="info-title">${event.title}</div>
+            <div class="info-excerpt">${event.shortDesc}</div>
+            <div class="info-full">${event.fullDesc}<br><br><strong>📌 Источник:</strong> ${makeTextLinksClickable(event.source)}</div>
+            ${event.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${event.benefits}</div>` : ''}
+            <button class="info-toggle-btn" onclick="toggleCardDescription('${event.id}', 'event'); event.stopPropagation();">Читать далее ↓</button>
+        </div>
+    `).join('');
+    
+    const btn = document.getElementById('eventsBtn');
+    btn.textContent = showAll ? `Скрыть (${events.length})` : `Показать все (${events.length})`;
+}
         function showEventDetails(id) {
             const item = allData.find(d => d.id === id);
             if (item && timelineInstance) {
