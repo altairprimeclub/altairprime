@@ -332,6 +332,7 @@
                     <li><a onclick="navigateTo('calculator')" id="nav-calculator">Калькулятор</a></li>
                     <li><a onclick="navigateTo('about')" id="nav-about">О клубе</a></li>
                     <li><a onclick="navigateTo('contacts')" id="nav-contacts">Контакты</a></li>
+                    <li><a onclick="navigateTo('auth')" id="nav-auth">Личный кабинет</a></li>
                 </ul>
             </nav>
         </div>
@@ -482,6 +483,39 @@
     </footer>
 
     <script>
+        <!-- ================= СЕКЦИЯ АВТОРИЗАЦИИ И КАБИНЕТА ================= -->
+<section id="auth" class="page-section">
+    <div class="container" style="max-width: 500px; margin: 0 auto; padding-top: 40px;">
+        <!-- Блок входа/регистрации (показывается, если пользователь не авторизован) -->
+        <div id="auth-forms">
+            <div id="login-box" style="background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 16px; padding: 30px;">
+                <h2 style="text-align: center; margin-bottom: 20px;">Вход</h2>
+                <input type="email" id="login-email" class="form-control" placeholder="Email" style="margin-bottom: 15px;">
+                <input type="password" id="login-password" class="form-control" placeholder="Пароль" style="margin-bottom: 20px;">
+                <button id="do-login" class="btn" style="width: 100%;">Войти</button>
+                <p style="text-align: center; margin-top: 20px;">Нет аккаунта? <a href="#" id="show-register">Зарегистрироваться</a></p>
+            </div>
+            <div id="register-box" style="display: none; background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 16px; padding: 30px;">
+                <h2 style="text-align: center; margin-bottom: 20px;">Регистрация</h2>
+                <input type="email" id="reg-email" class="form-control" placeholder="Email" style="margin-bottom: 15px;">
+                <input type="password" id="reg-password" class="form-control" placeholder="Пароль (мин. 6 символов)" style="margin-bottom: 20px;">
+                <button id="do-register" class="btn" style="width: 100%;">Зарегистрироваться</button>
+                <p style="text-align: center; margin-top: 20px;">Уже есть аккаунт? <a href="#" id="show-login">Войти</a></p>
+            </div>
+        </div>
+
+        <!-- Блок личного кабинета (показывается после входа) -->
+        <div id="dashboard" style="display: none; background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 16px; padding: 30px;">
+            <h2>Добро пожаловать, <span id="user-email"></span>!</h2>
+            <hr style="margin: 20px 0; border-color: rgba(0,210,255,0.2);">
+            <h3>Мои инвестиции</h3>
+            <div id="user-investments" style="margin-top: 15px;">
+                <p>Загрузка...</p>
+            </div>
+            <button id="logout-btn" class="btn" style="margin-top: 30px; background: rgba(255,0,0,0.2); border-color: #ff4a6d; color: #ff4a6d;">Выйти</button>
+        </div>
+    </div>
+</section>
         // ================= 1. ЗВЁЗДНЫЙ ФОН =================
         const initStarfield = () => {
             const canvas = document.getElementById('starfield');
@@ -1050,7 +1084,141 @@
             document.getElementById('resMonthly').innerText = Math.round(monthly / shares).toLocaleString() + ' ₽';
             document.getElementById('resROI').innerText = roi.toFixed(2) + '%';
         }
+// ================= АВТОРИЗАЦИЯ И КАБИНЕТ =================
+let currentUser = null;
 
+// Переключение между формами входа и регистрации
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'show-register') {
+        e.preventDefault();
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('register-box').style.display = 'block';
+    }
+    if (e.target.id === 'show-login') {
+        e.preventDefault();
+        document.getElementById('register-box').style.display = 'none';
+        document.getElementById('login-box').style.display = 'block';
+    }
+});
+
+// Функция входа
+async function loginUser(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+        alert('Ошибка входа: ' + error.message);
+        return false;
+    }
+    currentUser = data.user;
+    showDashboard();
+    return true;
+}
+
+// Функция регистрации
+async function registerUser(email, password) {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+        alert('Ошибка регистрации: ' + error.message);
+        return false;
+    }
+    alert('Регистрация успешна! Теперь войдите.');
+    // Переключим на форму входа
+    document.getElementById('register-box').style.display = 'none';
+    document.getElementById('login-box').style.display = 'block';
+    return true;
+}
+
+// Выход
+async function logoutUser() {
+    await supabase.auth.signOut();
+    currentUser = null;
+    showAuthForms();
+}
+
+// Отобразить кабинет (после входа)
+async function showDashboard() {
+    document.getElementById('auth-forms').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    const user = currentUser;
+    document.getElementById('user-email').innerText = user.email;
+    
+    // Загрузить инвестиции пользователя (пример)
+    // Для реальных данных нужно создать таблицу investments и связать с user.id
+    const investmentsDiv = document.getElementById('user-investments');
+    investmentsDiv.innerHTML = '<p>Загрузка ваших инвестиций...</p>';
+    
+    // Здесь будет запрос к Supabase, но для начала покажем заглушку
+    // Позже замените на реальный SELECT из таблицы investments
+    investmentsDiv.innerHTML = `
+        <div class="deal-card visible" style="margin-bottom: 15px;">
+            <div class="deal-content">
+                <div class="deal-title">ЖК «Патриаршие Сады»</div>
+                <div class="deal-stats">
+                    <div class="deal-stat-item"><span class="deal-stat-label">Сумма</span><span class="deal-stat-value">52 000 000 ₽</span></div>
+                    <div class="deal-stat-item"><span class="deal-stat-label">Доля</span><span class="deal-stat-value">25%</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="deal-card visible">
+            <div class="deal-content">
+                <div class="deal-title">ЖК «Отрадное»</div>
+                <div class="deal-stats">
+                    <div class="deal-stat-item"><span class="deal-stat-label">Сумма</span><span class="deal-stat-value">24 000 000 ₽</span></div>
+                    <div class="deal-stat-item"><span class="deal-stat-label">Доля</span><span class="deal-stat-value">25%</span></div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Показать формы входа/регистрации
+function showAuthForms() {
+    document.getElementById('auth-forms').style.display = 'block';
+    document.getElementById('dashboard').style.display = 'none';
+    // Очистка полей
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('reg-email').value = '';
+    document.getElementById('reg-password').value = '';
+}
+
+// Проверка сессии при загрузке страницы
+async function checkSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        currentUser = session.user;
+        showDashboard();
+        // Если пользователь открыл страницу не в разделе auth, можно перенаправить
+        // Но лучше просто показать кабинет в любом случае
+    } else {
+        showAuthForms();
+    }
+}
+
+// Назначение обработчиков кнопок (после загрузки DOM)
+document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById('do-login');
+    const regBtn = document.getElementById('do-register');
+    const logoutBtn = document.getElementById('logout-btn');
+    
+    if (loginBtn) loginBtn.onclick = () => {
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-password').value;
+        loginUser(email, pass);
+    };
+    if (regBtn) regBtn.onclick = () => {
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-password').value;
+        if (pass.length < 6) {
+            alert('Пароль должен быть не менее 6 символов');
+            return;
+        }
+        registerUser(email, pass);
+    };
+    if (logoutBtn) logoutBtn.onclick = () => logoutUser();
+    
+    // Запуск проверки сессии
+    checkSession();
+});
         // ================= 11. НАВИГАЦИЯ =================
         function navigateTo(pageId) {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -1083,5 +1251,9 @@
             calculateROI();
         };
     </script>
+    // ================= ПОДКЛЮЧЕНИЕ К SUPABASE =================
+const SUPABASE_URL = 'https://ваш_проект.supabase.co';   // замените на ваш URL
+const SUPABASE_ANON_KEY = 'ваш_anon_ключ';               // замените на ваш ключ
+const supabase = supabase.createClient(https://vlrpekzoqpadonfwqvjv.supabase.co, sb_publishable_5_7stu11ivaab_-__cudTA_TbXzNGZD);
 </body>
 </html>
