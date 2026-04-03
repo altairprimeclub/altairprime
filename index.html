@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         /* ================= 1. БАЗОВЫЕ СТИЛИ И ПЕРЕМЕННЫЕ ================= */
         :root {
@@ -224,13 +225,11 @@
         .result-box { background:rgba(0,0,0,0.5); padding:15px; border-left:4px solid var(--primary-blue); margin-bottom:15px; }
         .result-value { font-size:1.5rem; font-family:var(--font-display); }
 
-        /* ================= 6. НОВАЯ СТРАНИЦА: ТЕКУЩИЕ СДЕЛКИ (Current Deals) ================= */
+        /* ================= 6. ТЕКУЩИЕ СДЕЛКИ ================= */
         .current-deals-header { padding:110px 0 40px; text-align:center; }
         .current-deals-header h1 { font-family:var(--font-display); font-size:clamp(1.8rem,4vw,2.8rem); margin-bottom:12px; background:linear-gradient(135deg, #fff, var(--primary-blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
         .current-deals-header p { color:var(--text-muted); max-width:650px; margin:0 auto; font-size:1.05rem; }
-        
         .current-deals-list { padding:20px 0 80px; display:flex; flex-direction:column; gap:50px; }
-        
         .cd-card {
             background:var(--bg-card); border:1px solid rgba(0,210,255,0.12); border-radius:16px;
             overflow:visible; transition:0.3s; box-shadow:0 4px 20px rgba(0,0,0,0.5);
@@ -253,15 +252,11 @@
         .cd-desc { color:var(--text-muted); line-height:1.65; font-size:0.95rem; }
         .cd-desc a { color:var(--primary-blue); text-decoration:underline; transition:0.2s; }
         .cd-desc a:hover { color:#fff; text-shadow:0 0 8px var(--cyan-glow); }
-
-        /* CD Timeline */
         .cd-timeline-section { border-top:1px solid rgba(0,210,255,0.15); padding:25px 25px 35px; background:var(--bg-panel); position:relative; }
         .cd-timeline-title { font-family:var(--font-display); font-size:1.1rem; color:var(--primary-blue); margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
         .cd-timeline-period { font-size:0.85rem; color:var(--text-muted); font-weight:400; font-family:var(--font-main); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:4px; }
-        
         .cd-timeline-wrapper { width:100%; height:160px; position:relative; padding:0 10px; }
         .cd-timeline-track { position:absolute; top:70px; left:20px; right:20px; height:2px; background:linear-gradient(90deg, transparent, rgba(0,210,255,0.4), transparent); box-shadow:0 0 10px var(--cyan-glow); }
-        
         .cd-year-marker {
             position:absolute; top:70px; transform:translateX(-50%);
             display:flex; flex-direction:column; align-items:center; gap:8px;
@@ -275,7 +270,6 @@
         }
         .cd-year-marker:hover .cd-year-star { background:var(--gold); box-shadow:0 0 15px var(--gold-glow); transform:rotate(45deg); }
         .cd-year-label { font-family:var(--font-display); font-size:0.75rem; color:#fff; text-shadow:0 0 5px var(--cyan-glow); margin-top:5px; }
-        
         .cd-year-tooltip {
             position:absolute; bottom:25px; left:50%; transform:translateX(-50%);
             background:rgba(8,8,12,0.98); border:1px solid var(--primary-blue); border-radius:10px;
@@ -298,7 +292,28 @@
         .spinner { width:45px; height:45px; border:3px solid rgba(0,210,255,0.1); border-top-color:var(--primary-blue); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 20px; }
         @keyframes spin { to { transform:rotate(360deg); } }
 
-        /* ================= 7. АДАПТИВ ================= */
+        /* ================= 7. СТИЛИ ДЛЯ НОВОГО КАБИНЕТА ================= */
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(0,210,255,0.15);
+            border-radius: 20px;
+            padding: 24px;
+            transition: 0.3s;
+        }
+        .stat-card:hover { border-color: var(--primary-blue); transform: translateY(-5px); }
+        .stat-label { font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 8px; }
+        .stat-value { font-size: 2rem; font-weight: 700; font-family: var(--font-display); color: var(--primary-blue); }
+        .stat-change { font-size: 0.8rem; color: var(--green-blue); margin-top: 8px; }
+        .chart-container { background: var(--bg-card); border-radius: 20px; padding: 20px; margin-top: 20px; }
+        .tab-btn {
+            background: transparent; border: none; color: var(--text-muted); padding: 12px 24px;
+            font-family: var(--font-display); font-size: 1rem; cursor: pointer; transition: 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active { color: var(--primary-blue); border-bottom-color: var(--primary-blue); }
+        .tab-btn:hover { color: var(--primary-blue); }
+
+        /* ================= 8. АДАПТИВ ================= */
         @media (max-width:1024px) {
             .cd-header { grid-template-columns:1fr; }
             .cd-photo { height:220px; }
@@ -414,7 +429,7 @@
             </div>
         </section>
 
-        <!-- 3. CURRENT DEALS (NEW PAGE) -->
+        <!-- 3. CURRENT DEALS -->
         <section id="current-deals" class="page-section">
             <div class="container">
                 <div class="current-deals-header">
@@ -422,10 +437,7 @@
                     <p>Детальная финансовая проекция по каждому объекту на 10 лет. Учитываются операционные расходы, комиссии и влияние рыночных событий.</p>
                 </div>
                 <div id="currentDealsContainer" class="current-deals-list">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка данных и расчёт проекций...</p>
-                    </div>
+                    <div class="loading"><div class="spinner"></div><p>Загрузка данных и расчёт проекций...</p></div>
                 </div>
             </div>
         </section>
@@ -476,119 +488,82 @@
             </div>
         </section>
 
-       <!-- 8. AUTH & DASHBOARD (НОВЫЙ ПРОФЕССИОНАЛЬНЫЙ КАБИНЕТ) -->
-<section id="auth" class="page-section">
-    <div class="container" style="max-width: 1400px; margin: 0 auto; padding-top: 40px;">
-        <!-- Формы входа/регистрации (показываются, если не авторизован) -->
-        <div id="auth-forms">
-            <div id="login-box" style="background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 20px; padding: 40px; max-width: 500px; margin: 0 auto;">
-                <h2 style="text-align: center; margin-bottom: 20px;">Вход в космический клуб</h2>
-                <input type="email" id="login-email" class="form-control" placeholder="Email" style="margin-bottom: 15px;">
-                <input type="password" id="login-password" class="form-control" placeholder="Пароль" style="margin-bottom: 20px;">
-                <button id="do-login" class="btn" style="width: 100%;">Войти</button>
-                <p style="text-align: center; margin-top: 20px;">Нет аккаунта? <a href="#" id="show-register">Зарегистрироваться</a></p>
-            </div>
-            <div id="register-box" style="display: none; background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 20px; padding: 40px; max-width: 500px; margin: 0 auto;">
-                <h2 style="text-align: center; margin-bottom: 20px;">Регистрация</h2>
-                <input type="email" id="reg-email" class="form-control" placeholder="Email" style="margin-bottom: 15px;">
-                <input type="password" id="reg-password" class="form-control" placeholder="Пароль (мин. 6 символов)" style="margin-bottom: 20px;">
-                <button id="do-register" class="btn" style="width: 100%;">Зарегистрироваться</button>
-                <p style="text-align: center; margin-top: 20px;">Уже есть аккаунт? <a href="#" id="show-login">Войти</a></p>
-            </div>
-        </div>
-
-        <!-- Личный кабинет (показывается после входа) -->
-        <div id="dashboard" style="display: none;">
-            <!-- Верхняя панель с приветствием и кнопкой выхода -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap;">
-                <div>
-                    <h1 style="font-family: var(--font-display); background: linear-gradient(135deg, #fff, var(--primary-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Инвестиционный портал</h1>
-                    <p style="color: var(--text-muted);">Добро пожаловать, <strong id="user-email-dashboard" style="color: var(--primary-blue);"></strong>!</p>
-                </div>
-                <button id="logout-btn" class="btn" style="background: rgba(255,0,0,0.1); border-color: var(--red-blue); color: var(--red-blue);">Выйти</button>
-            </div>
-
-            <!-- Вкладки -->
-            <div style="display: flex; gap: 10px; border-bottom: 1px solid rgba(0,210,255,0.2); margin-bottom: 30px; flex-wrap: wrap;">
-                <button class="tab-btn active" data-tab="overview">📊 Обзор</button>
-                <button class="tab-btn" data-tab="portfolio">🏢 Портфель</button>
-                <button class="tab-btn" data-tab="analytics">📈 Аналитика</button>
-                <button class="tab-btn" data-tab="chat">💬 Чат с менеджером</button>
-                <button class="tab-btn" data-tab="documents">📄 Документы</button>
-            </div>
-
-            <!-- Контент вкладок -->
-            <div id="tab-overview" class="tab-content active">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 40px;">
-                    <div class="stat-card">
-                        <div class="stat-label">Общая стоимость портфеля</div>
-                        <div class="stat-value" id="total-portfolio-value">0 ₽</div>
-                        <div class="stat-change">+12% за год</div>
+        <!-- 8. AUTH & DASHBOARD (НОВЫЙ ПРОФЕССИОНАЛЬНЫЙ КАБИНЕТ) -->
+        <section id="auth" class="page-section">
+            <div class="container" style="max-width: 1400px; margin: 0 auto; padding-top: 40px;">
+                <div id="auth-forms">
+                    <div id="login-box" style="background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 20px; padding: 40px; max-width: 500px; margin: 0 auto;">
+                        <h2 style="text-align: center; margin-bottom: 20px;">Вход в космический клуб</h2>
+                        <input type="email" id="login-email" class="form-control" placeholder="Email" style="margin-bottom: 15px;">
+                        <input type="password" id="login-password" class="form-control" placeholder="Пароль" style="margin-bottom: 20px;">
+                        <button id="do-login" class="btn" style="width: 100%;">Войти</button>
+                        <p style="text-align: center; margin-top: 20px;">Нет аккаунта? <a href="#" id="show-register">Зарегистрироваться</a></p>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Накопленный доход</div>
-                        <div class="stat-value" id="total-income">0 ₽</div>
-                        <div class="stat-change">с момента инвестирования</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Средняя доходность (ROI)</div>
-                        <div class="stat-value" id="avg-roi">0%</div>
-                        <div class="stat-change">годовых</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Активных объектов</div>
-                        <div class="stat-value" id="active-deals-count">0</div>
-                        <div class="stat-change">в управлении</div>
+                    <div id="register-box" style="display: none; background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 20px; padding: 40px; max-width: 500px; margin: 0 auto;">
+                        <h2 style="text-align: center; margin-bottom: 20px;">Регистрация</h2>
+                        <input type="email" id="reg-email" class="form-control" placeholder="Email" style="margin-bottom: 15px;">
+                        <input type="password" id="reg-password" class="form-control" placeholder="Пароль (мин. 6 символов)" style="margin-bottom: 20px;">
+                        <button id="do-register" class="btn" style="width: 100%;">Зарегистрироваться</button>
+                        <p style="text-align: center; margin-top: 20px;">Уже есть аккаунт? <a href="#" id="show-login">Войти</a></p>
                     </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="growthChart" width="400" height="200" style="max-height: 300px;"></canvas>
-                </div>
-            </div>
-
-            <div id="tab-portfolio" class="tab-content" style="display: none;">
-                <div id="portfolio-list" class="deals-grid">
-                    <!-- динамически загружаемые инвестиции пользователя -->
-                </div>
-            </div>
-
-            <div id="tab-analytics" class="tab-content" style="display: none;">
-                <div style="background: var(--bg-card); border-radius: 20px; padding: 25px;">
-                    <h3>Прогноз роста цен на элитную недвижимость Москвы</h3>
-                    <canvas id="forecastChart" width="400" height="200" style="max-height: 300px;"></canvas>
-                    <p style="margin-top: 20px; color: var(--text-muted);">* Данные основаны на аналитике ЦИАН и Knight Frank</p>
-                </div>
-            </div>
-
-            <div id="tab-chat" class="tab-content" style="display: none;">
-                <div style="background: var(--bg-card); border-radius: 20px; display: flex; flex-direction: column; height: 500px;">
-                    <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
-                        <!-- сообщения будут здесь -->
+                <div id="dashboard" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap;">
+                        <div>
+                            <h1 style="font-family: var(--font-display); background: linear-gradient(135deg, #fff, var(--primary-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Инвестиционный портал</h1>
+                            <p style="color: var(--text-muted);">Добро пожаловать, <strong id="user-email-dashboard" style="color: var(--primary-blue);"></strong>!</p>
+                        </div>
+                        <button id="logout-btn" class="btn" style="background: rgba(255,0,0,0.1); border-color: var(--red-blue); color: var(--red-blue);">Выйти</button>
                     </div>
-                    <div style="padding: 20px; border-top: 1px solid rgba(0,210,255,0.2); display: flex; gap: 10px;">
-                        <input type="text" id="chat-input" class="form-control" placeholder="Напишите менеджеру...">
-                        <button id="send-message-btn" class="btn">Отправить</button>
+                    <div style="display: flex; gap: 10px; border-bottom: 1px solid rgba(0,210,255,0.2); margin-bottom: 30px; flex-wrap: wrap;">
+                        <button class="tab-btn active" data-tab="overview">📊 Обзор</button>
+                        <button class="tab-btn" data-tab="portfolio">🏢 Портфель</button>
+                        <button class="tab-btn" data-tab="analytics">📈 Аналитика</button>
+                        <button class="tab-btn" data-tab="chat">💬 Чат с менеджером</button>
+                        <button class="tab-btn" data-tab="documents">📄 Документы</button>
+                    </div>
+                    <div id="tab-overview" class="tab-content active">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 40px;">
+                            <div class="stat-card"><div class="stat-label">Общая стоимость портфеля</div><div class="stat-value" id="total-portfolio-value">0 ₽</div><div class="stat-change">+12% за год</div></div>
+                            <div class="stat-card"><div class="stat-label">Накопленный доход</div><div class="stat-value" id="total-income">0 ₽</div><div class="stat-change">с момента инвестирования</div></div>
+                            <div class="stat-card"><div class="stat-label">Средняя доходность (ROI)</div><div class="stat-value" id="avg-roi">0%</div><div class="stat-change">годовых</div></div>
+                            <div class="stat-card"><div class="stat-label">Активных объектов</div><div class="stat-value" id="active-deals-count">0</div><div class="stat-change">в управлении</div></div>
+                        </div>
+                        <div class="chart-container"><canvas id="growthChart" width="400" height="200" style="max-height: 300px;"></canvas></div>
+                    </div>
+                    <div id="tab-portfolio" class="tab-content" style="display: none;"><div id="portfolio-list" class="deals-grid"></div></div>
+                    <div id="tab-analytics" class="tab-content" style="display: none;">
+                        <div style="background: var(--bg-card); border-radius: 20px; padding: 25px;">
+                            <h3>Прогноз роста цен на элитную недвижимость Москвы</h3>
+                            <canvas id="forecastChart" width="400" height="200" style="max-height: 300px;"></canvas>
+                            <p style="margin-top: 20px; color: var(--text-muted);">* Данные основаны на аналитике ЦИАН и Knight Frank</p>
+                        </div>
+                    </div>
+                    <div id="tab-chat" class="tab-content" style="display: none;">
+                        <div style="background: var(--bg-card); border-radius: 20px; display: flex; flex-direction: column; height: 500px;">
+                            <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;"></div>
+                            <div style="padding: 20px; border-top: 1px solid rgba(0,210,255,0.2); display: flex; gap: 10px;">
+                                <input type="text" id="chat-input" class="form-control" placeholder="Напишите менеджеру...">
+                                <button id="send-message-btn" class="btn">Отправить</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-documents" class="tab-content" style="display: none;">
+                        <div class="deals-grid" id="documents-list">
+                            <div class="info-card"><div class="info-title">Договор о паевом участии</div><div class="info-excerpt">Подписан 15.01.2025</div><a href="#" style="color: var(--primary-blue);">Скачать PDF</a></div>
+                            <div class="info-card"><div class="info-title">Отчёт об оценке недвижимости</div><div class="info-excerpt">Актуально на 01.03.2025</div><a href="#" style="color: var(--primary-blue);">Скачать PDF</a></div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </section>
+    </main>
 
-            <div id="tab-documents" class="tab-content" style="display: none;">
-                <div class="deals-grid" id="documents-list">
-                    <div class="info-card">
-                        <div class="info-title">Договор о паевом участии</div>
-                        <div class="info-excerpt">Подписан 15.01.2025</div>
-                        <a href="#" style="color: var(--primary-blue);">Скачать PDF</a>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-title">Отчёт об оценке недвижимости</div>
-                        <div class="info-excerpt">Актуально на 01.03.2025</div>
-                        <a href="#" style="color: var(--primary-blue);">Скачать PDF</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+    <footer style="border-top:1px solid rgba(0,210,255,0.1); padding:20px 0; text-align:center; color:var(--text-muted);">
+        <div class="container"><p>&copy; 2025 Altair Prime Club. Все права защищены.</p></div>
+    </footer>
+
+    <script>
         // ================= 1. ЗВЁЗДНЫЙ ФОН =================
         function initStarfield() {
             const canvas = document.getElementById('starfield');
@@ -639,12 +614,12 @@
             });
         }
 
-        // ================= 2. ИНИЦИАЛИЗАЦИЯ SUPABASE =================
+        // ================= 2. SUPABASE =================
         const SUPABASE_URL = 'https://vlrpekzoqpadonfwqvjv.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_5_7stu11ivaab_-__cudTA_TbXzNGZD';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ================= 3. КОНСТАНТЫ И ПЕРЕМЕННЫЕ =================
+        // ================= 3. КОНСТАНТЫ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =================
         const MONTHS = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
         const TODAY = new Date('2026-05-15');
         const OFFSET_EVENT = -30;
@@ -657,170 +632,13 @@
         let forecasts = [];
         let settings = {};
         let timelineInstance = null;
-                // Глобальные переменные для графиков
-let growthChart, forecastChart;
-let chatSubscription = null;
-
-// Функция обновления дашборда (метрики, портфель)
-async function updateDashboardData() {
-    if (!currentUser) return;
-    // Здесь вы должны получить реальные данные из вашей таблицы investments
-    // Пока используем демо-данные
-    const demoInvestments = [
-        { title: "ЖК «Патриаршие Сады»", amount: 52000000, share: 25, profit: 12480000, roi: 24 },
-        { title: "ЖК «Отрадное»", amount: 24000000, share: 25, profit: 5760000, roi: 24 }
-    ];
-    const totalPortfolio = demoInvestments.reduce((sum, inv) => sum + inv.amount, 0);
-    const totalIncome = demoInvestments.reduce((sum, inv) => sum + inv.profit, 0);
-    const avgROI = (totalIncome / totalPortfolio * 100).toFixed(1);
-    
-    document.getElementById('total-portfolio-value').innerText = totalPortfolio.toLocaleString() + ' ₽';
-    document.getElementById('total-income').innerText = totalIncome.toLocaleString() + ' ₽';
-    document.getElementById('avg-roi').innerText = avgROI + '%';
-    document.getElementById('active-deals-count').innerText = demoInvestments.length;
-    
-    // Отрисовка графика роста (пример)
-    const ctx = document.getElementById('growthChart')?.getContext('2d');
-    if (ctx && growthChart) growthChart.destroy();
-    if (ctx) {
-        growthChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['2022', '2023', '2024', '2025', '2026 (прогноз)'],
-                datasets: [{
-                    label: 'Стоимость портфеля (млн ₽)',
-                    data: [45, 62, 78, 89, 102],
-                    borderColor: '#00d2ff',
-                    backgroundColor: 'rgba(0,210,255,0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: true }
-        });
-    }
-    
-    // График аналитики (прогноз цен)
-    const forecastCtx = document.getElementById('forecastChart')?.getContext('2d');
-    if (forecastCtx && forecastChart) forecastChart.destroy();
-    if (forecastCtx) {
-        forecastChart = new Chart(forecastCtx, {
-            type: 'line',
-            data: {
-                labels: ['2024', '2025', '2026', '2027', '2028'],
-                datasets: [{
-                    label: 'Средняя цена элитной недвижимости (млн ₽)',
-                    data: [48, 52, 57, 63, 70],
-                    borderColor: '#00d4aa',
-                    backgroundColor: 'rgba(0,212,170,0.1)',
-                    tension: 0.4
-                }]
-            }
-        });
-    }
-    
-    // Отображение портфеля
-    const portfolioContainer = document.getElementById('portfolio-list');
-    portfolioContainer.innerHTML = demoInvestments.map(inv => `
-        <div class="deal-card visible">
-            <div class="deal-content">
-                <div class="deal-title">${inv.title}</div>
-                <div class="deal-stats">
-                    <div class="deal-stat-item"><span class="deal-stat-label">Сумма</span><span class="deal-stat-value">${inv.amount.toLocaleString()} ₽</span></div>
-                    <div class="deal-stat-item"><span class="deal-stat-label">Доля</span><span class="deal-stat-value">${inv.share}%</span></div>
-                    <div class="deal-stat-item"><span class="deal-stat-label">Заработано</span><span class="deal-stat-value profit">+${inv.profit.toLocaleString()} ₽</span></div>
-                </div>
-                <div class="deal-actions">
-                    <button class="deal-toggle-btn" onclick="alert('Функция продажи доли в разработке')">Продать долю</button>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Инициализация чата (Supabase Realtime)
-async function initChat() {
-    const messagesContainer = document.getElementById('chat-messages');
-    const input = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('send-message-btn');
-    
-    if (!currentUser) return;
-    
-    // Подписка на новые сообщения
-    if (chatSubscription) await supabaseClient.removeSubscription(chatSubscription);
-    chatSubscription = supabaseClient
-        .channel('messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-            const msg = payload.new;
-            if (msg.user_id === currentUser.id || msg.is_from_manager) {
-                appendMessage(msg.message, msg.is_from_manager);
-            }
-        })
-        .subscribe();
-    
-    // Загружаем историю
-    const { data: history } = await supabaseClient
-        .from('messages')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: true });
-    
-    messagesContainer.innerHTML = '';
-    history?.forEach(msg => appendMessage(msg.message, msg.is_from_manager));
-    
-    // Отправка сообщения
-    sendBtn.onclick = async () => {
-        const text = input.value.trim();
-        if (!text) return;
-        await supabaseClient.from('messages').insert({
-            user_id: currentUser.id,
-            message: text,
-            is_from_manager: false
-        });
-        input.value = '';
-    };
-}
-
-function appendMessage(text, isManager) {
-    const container = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.style.cssText = `display: flex; justify-content: ${isManager ? 'flex-start' : 'flex-end'};`;
-    div.innerHTML = `
-        <div style="max-width: 70%; background: ${isManager ? 'rgba(0,210,255,0.1)' : 'rgba(0,212,170,0.1)'}; border-radius: 18px; padding: 10px 16px;">
-            <strong style="color: ${isManager ? '#00d2ff' : '#00d4aa'};">${isManager ? 'Менеджер' : 'Вы'}</strong>
-            <p style="margin-top: 5px;">${text}</p>
-            <small style="color: #888;">${new Date().toLocaleTimeString()}</small>
-        </div>
-    `;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-}
-
-// Переключение вкладок
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const tabId = btn.getAttribute('data-tab');
-        document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
-        document.getElementById(`tab-${tabId}`).style.display = 'block';
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        if (tabId === 'chat') initChat();
-    });
-});
-
-// Переопределяем showDashboard
-async function showDashboard() {
-    document.getElementById('auth-forms').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    document.getElementById('user-email-dashboard').innerText = currentUser.email;
-    await updateDashboardData();
-    // Автоматически открываем вкладку обзора
-    document.querySelector('.tab-btn[data-tab="overview"]').click();
-}
+        let currentUser = null;
+        let growthChart = null;
+        let forecastChart = null;
+        let chatSubscription = null;
 
         // ================= 4. ЗАГРУЗКА НАСТРОЕК (Google Sheets) =================
         const SETTINGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQej5JHY9Yl3-cyq_3UfCuy2-iSTSJ4vz0yftxDWD04m231xiJmeVIE46BcbK1ZzHdChPSf0fc_jUqp/pub?output=csv&gid=114192626';
-        
         async function loadSettings() {
             try {
                 const response = await fetch(SETTINGS_SHEET_URL);
@@ -885,47 +703,37 @@ async function showDashboard() {
                     fetchFromAirtable('Forecasts'),
                     fetchFromAirtable('Deals')
                 ]);
-                
                 events = eventsRec.map(r => ({
                     id: r.id, type: 'event', date: r.fields.Date, title: r.fields.Title,
                     fullDesc: makeTextLinksClickable(r.fields.Description || ''),
-                    shortDesc: (makeTextLinksClickable(r.fields.Description || '')).length > 150 ? 
-                               (makeTextLinksClickable(r.fields.Description || '')).substring(0, 150) + '...' : 
-                               makeTextLinksClickable(r.fields.Description || ''),
+                    shortDesc: (makeTextLinksClickable(r.fields.Description || '')).length > 150 ? (makeTextLinksClickable(r.fields.Description || '')).substring(0, 150) + '...' : makeTextLinksClickable(r.fields.Description || ''),
                     val: r.fields.Impact || '', source: r.fields.Source || '',
                     benefits: makeTextLinksClickable(r.fields.Benefits || '')
                 }));
-                
                 forecasts = forecastsRec.map(r => ({
                     id: r.id, type: 'forecast', date: r.fields.Date, title: r.fields.Title,
                     fullDesc: makeTextLinksClickable(r.fields.Description || ''),
-                    shortDesc: (makeTextLinksClickable(r.fields.Description || '')).length > 150 ? 
-                               (makeTextLinksClickable(r.fields.Description || '')).substring(0, 150) + '...' : 
-                               makeTextLinksClickable(r.fields.Description || ''),
+                    shortDesc: (makeTextLinksClickable(r.fields.Description || '')).length > 150 ? (makeTextLinksClickable(r.fields.Description || '')).substring(0, 150) + '...' : makeTextLinksClickable(r.fields.Description || ''),
                     val: r.fields.Impact || '', source: r.fields.Source || '',
                     benefits: makeTextLinksClickable(r.fields.Benefits || '')
                 }));
-
-                deals = dealsRec
-                    .filter(r => r.fields.Title && r.fields.Rent && r.fields.Area)
-                    .map(r => {
-                        const purchaseYear = r.fields.Date ? new Date(r.fields.Date).getFullYear() : new Date().getFullYear();
-                        const fullDesc = makeTextLinksClickable(r.fields.Description || '');
-                        return {
-                            id: r.id, type: 'deal', date: r.fields.Date || '2024-01-01',
-                            title: r.fields.Title, val: r.fields.Price || '0 ₽', profit: r.fields.Profit || '0%',
-                            area: r.fields.Area, rent: r.fields.Rent, status: r.fields.Status || 'В продаже',
-                            location: r.fields.Location || '',
-                            fullDesc: fullDesc,
-                            shortDesc: fullDesc.length > 150 ? fullDesc.substring(0, 150) + '...' : fullDesc,
-                            benefits: makeTextLinksClickable(r.fields.Benefits || ''),
-                            smartbuy: makeTextLinksClickable(r.fields.SmartBuy || ''),
-                            photo: r.fields.Photo?.[0]?.url || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80',
-                            priceNum: parseFloat((r.fields.Price||'0').replace(/\D/g,'')),
-                            purchaseYear
-                        };
-                    });
-                
+                deals = dealsRec.filter(r => r.fields.Title && r.fields.Rent && r.fields.Area).map(r => {
+                    const purchaseYear = r.fields.Date ? new Date(r.fields.Date).getFullYear() : new Date().getFullYear();
+                    const fullDesc = makeTextLinksClickable(r.fields.Description || '');
+                    return {
+                        id: r.id, type: 'deal', date: r.fields.Date || '2024-01-01',
+                        title: r.fields.Title, val: r.fields.Price || '0 ₽', profit: r.fields.Profit || '0%',
+                        area: r.fields.Area, rent: r.fields.Rent, status: r.fields.Status || 'В продаже',
+                        location: r.fields.Location || '',
+                        fullDesc: fullDesc,
+                        shortDesc: fullDesc.length > 150 ? fullDesc.substring(0, 150) + '...' : fullDesc,
+                        benefits: makeTextLinksClickable(r.fields.Benefits || ''),
+                        smartbuy: makeTextLinksClickable(r.fields.SmartBuy || ''),
+                        photo: r.fields.Photo?.[0]?.url || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80',
+                        priceNum: parseFloat((r.fields.Price||'0').replace(/\D/g,'')),
+                        purchaseYear
+                    };
+                });
                 allData = [...events, ...forecasts, ...deals];
                 console.log('✅ Данные загружены: Событий:', events.length, 'Прогнозов:', forecasts.length, 'Сделок:', deals.length);
                 return true;
@@ -935,7 +743,7 @@ async function showDashboard() {
             }
         }
 
-        // ================= 6. РАСЧЁТ ПРОЕКЦИЙ (для Current Deals) =================
+        // ================= 6. РАСЧЁТ ПРОЕКЦИЙ =================
         function parseImpact(text) {
             if(!text) return { type: 'none', percent: 0 };
             const lower = text.toLowerCase();
@@ -954,125 +762,43 @@ async function showDashboard() {
             const area = deal.area || 0;
             const results = [];
             let cumulativeProfit = 0;
-            
-            const impacts = [...eventsData, ...forecastsData]
-                .map(item => ({ year: new Date(item.date).getFullYear(), ...parseImpact(item.impact || item.val || '') }))
-                .filter(i => i.type !== 'none').sort((a,b) => a.year - b.year);
-            
+            const impacts = [...eventsData, ...forecastsData].map(item => ({ year: new Date(item.date).getFullYear(), ...parseImpact(item.impact || item.val || '') })).filter(i => i.type !== 'none').sort((a,b) => a.year - b.year);
             const rentGrowthBase = 1 + (settings.rent_growth_rate || 0.05);
             const propGrowthBase = 1 + (settings.property_growth_rate || 0.04);
-            
-            let activeRentMult = 1;
-            let activePropMult = 1;
-            
+            let activeRentMult = 1, activePropMult = 1;
             for(let i=0; i<=10; i++) {
                 const year = purchaseYear + i;
-                
-                impacts.forEach(imp => {
-                    if(imp.year <= year) {
-                        if(imp.type === 'rent') activeRentMult *= (1 + imp.percent / 100);
-                        if(imp.type === 'property') activePropMult *= (1 + imp.percent / 100);
-                    }
-                });
-                
+                impacts.forEach(imp => { if(imp.year <= year) { if(imp.type === 'rent') activeRentMult *= (1 + imp.percent / 100); if(imp.type === 'property') activePropMult *= (1 + imp.percent / 100); } });
                 const currentRent = baseRent * Math.pow(rentGrowthBase, i) * activeRentMult;
                 const currentPropValue = basePrice * Math.pow(propGrowthBase, i) * activePropMult;
-                
                 const grossAnnual = currentRent * 12 * (settings.occupancy_rate || 0.85);
                 const netRent = grossAnnual * (settings.commission_rate || 0.85);
-                
-                const expenses = (settings.cleaning_per_studio || 0) +
-                                 (settings.laundry_per_studio || 0) +
-                                 (settings.utilities_per_m2_month || 0) * area * 12 +
-                                 (settings.insurance_year || 0) +
-                                 (settings.marketing_per_studio_year || 0) +
-                                 (settings.telecom_per_studio_month || 0) * 12;
-                
+                const expenses = (settings.cleaning_per_studio || 0) + (settings.laundry_per_studio || 0) + (settings.utilities_per_m2_month || 0) * area * 12 + (settings.insurance_year || 0) + (settings.marketing_per_studio_year || 0) + (settings.telecom_per_studio_month || 0) * 12;
                 const yearProfit = netRent - expenses;
                 cumulativeProfit += yearProfit;
-                
-                results.push({
-                    year, yearProfit: Math.round(yearProfit), cumulativeProfit: Math.round(cumulativeProfit),
-                    expenses: Math.round(expenses), propertyValue: Math.round(currentPropValue)
-                });
+                results.push({ year, yearProfit: Math.round(yearProfit), cumulativeProfit: Math.round(cumulativeProfit), expenses: Math.round(expenses), propertyValue: Math.round(currentPropValue) });
             }
             return results;
         }
 
-        // ================= 7. ОТРИСОВКА TIMELINE ДЛЯ СДЕЛОК =================
         function renderDealTimeline(container, projections) {
             container.innerHTML = '';
-            const track = document.createElement('div');
-            track.className = 'cd-timeline-track';
-            container.appendChild(track);
-            
+            const track = document.createElement('div'); track.className = 'cd-timeline-track'; container.appendChild(track);
             projections.forEach((p, idx) => {
-                const marker = document.createElement('div');
-                marker.className = 'cd-year-marker';
-                marker.style.left = `${(idx / 10) * 100}%`;
-                
-                marker.innerHTML = `
-                    <div class="cd-year-tooltip">
-                        <div class="cd-tooltip-row"><span class="cd-tooltip-label">📅 Год</span><span class="cd-tooltip-value">${p.year}</span></div>
-                        <div class="cd-tooltip-divider"></div>
-                        <div class="cd-tooltip-row"><span class="cd-tooltip-label">💰 Прибыль клиента</span><span class="cd-tooltip-value cd-val-profit">${p.yearProfit.toLocaleString('ru-RU')} ₽</span></div>
-                        <div class="cd-tooltip-row"><span class="cd-tooltip-label">📈 Всего заработано</span><span class="cd-tooltip-value cd-val-total">${p.cumulativeProfit.toLocaleString('ru-RU')} ₽</span></div>
-                        <div class="cd-tooltip-row"><span class="cd-tooltip-label">🧾 Расходы за год</span><span class="cd-tooltip-value cd-val-expense">-${p.expenses.toLocaleString('ru-RU')} ₽</span></div>
-                        <div class="cd-tooltip-divider"></div>
-                        <div class="cd-tooltip-row"><span class="cd-tooltip-label">🏠 Стоимость объекта</span><span class="cd-tooltip-value cd-val-property">${p.propertyValue.toLocaleString('ru-RU')} ₽</span></div>
-                    </div>
-                    <div class="cd-year-star"></div>
-                    <span class="cd-year-label">${p.year}</span>
-                `;
+                const marker = document.createElement('div'); marker.className = 'cd-year-marker'; marker.style.left = `${(idx / 10) * 100}%`;
+                marker.innerHTML = `<div class="cd-year-tooltip"><div class="cd-tooltip-row"><span class="cd-tooltip-label">📅 Год</span><span class="cd-tooltip-value">${p.year}</span></div><div class="cd-tooltip-divider"></div><div class="cd-tooltip-row"><span class="cd-tooltip-label">💰 Прибыль клиента</span><span class="cd-tooltip-value cd-val-profit">${p.yearProfit.toLocaleString('ru-RU')} ₽</span></div><div class="cd-tooltip-row"><span class="cd-tooltip-label">📈 Всего заработано</span><span class="cd-tooltip-value cd-val-total">${p.cumulativeProfit.toLocaleString('ru-RU')} ₽</span></div><div class="cd-tooltip-row"><span class="cd-tooltip-label">🧾 Расходы за год</span><span class="cd-tooltip-value cd-val-expense">-${p.expenses.toLocaleString('ru-RU')} ₽</span></div><div class="cd-tooltip-divider"></div><div class="cd-tooltip-row"><span class="cd-tooltip-label">🏠 Стоимость объекта</span><span class="cd-tooltip-value cd-val-property">${p.propertyValue.toLocaleString('ru-RU')} ₽</span></div></div><div class="cd-year-star"></div><span class="cd-year-label">${p.year}</span>`;
                 container.appendChild(marker);
             });
         }
 
-        // ================= 8. ОТРИСОВКА СТРАНИЦЫ CURRENT DEALS =================
         function renderCurrentDealsPage() {
             const container = document.getElementById('currentDealsContainer');
-            if(!deals.length) {
-                container.innerHTML = '<div class="error"><h3>Нет активных сделок</h3></div>';
-                return;
-            }
-            
-            container.innerHTML = deals.map(deal => `
-                <div class="cd-card">
-                    <div class="cd-header">
-                        <div class="cd-photo">
-                            <img src="${deal.photo}" alt="${deal.title}" loading="lazy">
-                            <span class="cd-status">${deal.status}</span>
-                        </div>
-                        <div class="cd-info">
-                            <h2>${deal.title}</h2>
-                            <div class="cd-metrics">
-                                <div class="cd-metric-box"><div class="cd-metric-label">Цена покупки</div><div class="cd-metric-value">${deal.val}</div></div>
-                                <div class="cd-metric-box"><div class="cd-metric-label">Площадь</div><div class="cd-metric-value">${deal.area} м²</div></div>
-                                <div class="cd-metric-box"><div class="cd-metric-label">Аренда/мес</div><div class="cd-metric-value">${deal.rent.toLocaleString('ru-RU')} ₽</div></div>
-                            </div>
-                            <div class="cd-desc">${deal.fullDesc}</div>
-                        </div>
-                    </div>
-                    <div class="cd-timeline-section">
-                        <div class="cd-timeline-title">
-                            <span>📊 Финансовая проекция (10 лет)</span>
-                            <span class="cd-timeline-period">${deal.purchaseYear} — ${deal.purchaseYear + 10}</span>
-                        </div>
-                        <div class="cd-timeline-wrapper" id="tl-${deal.id}"></div>
-                    </div>
-                </div>
-            `).join('');
-            
-            requestAnimationFrame(() => {
-                deals.forEach(deal => {
-                    const proj = calculateDealProjections(deal, settings, events, forecasts);
-                    const el = document.getElementById(`tl-${deal.id}`);
-                    if(el) renderDealTimeline(el, proj);
-                });
-            });
+            if(!deals.length) { container.innerHTML = '<div class="error"><h3>Нет активных сделок</h3></div>'; return; }
+            container.innerHTML = deals.map(deal => `<div class="cd-card"><div class="cd-header"><div class="cd-photo"><img src="${deal.photo}" alt="${deal.title}" loading="lazy"><span class="cd-status">${deal.status}</span></div><div class="cd-info"><h2>${deal.title}</h2><div class="cd-metrics"><div class="cd-metric-box"><div class="cd-metric-label">Цена покупки</div><div class="cd-metric-value">${deal.val}</div></div><div class="cd-metric-box"><div class="cd-metric-label">Площадь</div><div class="cd-metric-value">${deal.area} м²</div></div><div class="cd-metric-box"><div class="cd-metric-label">Аренда/мес</div><div class="cd-metric-value">${deal.rent.toLocaleString('ru-RU')} ₽</div></div></div><div class="cd-desc">${deal.fullDesc}</div></div></div><div class="cd-timeline-section"><div class="cd-timeline-title"><span>📊 Финансовая проекция (10 лет)</span><span class="cd-timeline-period">${deal.purchaseYear} — ${deal.purchaseYear + 10}</span></div><div class="cd-timeline-wrapper" id="tl-${deal.id}"></div></div></div>`).join('');
+            requestAnimationFrame(() => { deals.forEach(deal => { const proj = calculateDealProjections(deal, settings, events, forecasts); const el = document.getElementById(`tl-${deal.id}`); if(el) renderDealTimeline(el, proj); }); });
         }
 
-        // ================= 9. ТАЙМЛАЙН (MAIN PAGE) =================
+        // ================= 7. ТАЙМЛАЙН =================
         class Timeline {
             constructor() {
                 this.container = document.getElementById('timelineContainer');
@@ -1083,333 +809,166 @@ async function showDashboard() {
                 this.targetScale = 1; this.targetOffsetX = 0;
                 this.init();
             }
-            init() {
-                this.bindEvents();
-                this.render();
-                this.startAnimationLoop();
-            }
+            init() { this.bindEvents(); this.render(); this.startAnimationLoop(); }
             startAnimationLoop() {
                 const animate = () => {
                     const scaleDiff = this.targetScale - this.scale;
-                    if (Math.abs(scaleDiff) > 0.001) this.scale += scaleDiff * 0.15;
-                    else this.scale = this.targetScale;
+                    if (Math.abs(scaleDiff) > 0.001) this.scale += scaleDiff * 0.15; else this.scale = this.targetScale;
                     const offsetDiff = this.targetOffsetX - this.offsetX;
-                    if (Math.abs(offsetDiff) > 0.5) this.offsetX += offsetDiff * 0.15;
-                    else this.offsetX = this.targetOffsetX;
+                    if (Math.abs(offsetDiff) > 0.5) this.offsetX += offsetDiff * 0.15; else this.offsetX = this.targetOffsetX;
                     if (Math.abs(scaleDiff) > 0.001 || Math.abs(offsetDiff) > 0.5) this.render();
                     requestAnimationFrame(animate);
-                };
-                animate();
+                }; animate();
             }
-            getX(dateStr) {
-                if (!dateStr) return 0;
-                const date = new Date(dateStr);
-                const diffYears = (date - TODAY) / (1000*60*60*24*365.25);
-                return diffYears * this.PIXELS_PER_YEAR;
-            }
-            getY(type) {
-                if(type==='event') return OFFSET_EVENT;
-                if(type==='forecast') return OFFSET_FORECAST;
-                return OFFSET_DEAL;
-            }
+            getX(dateStr) { if (!dateStr) return 0; const date = new Date(dateStr); const diffYears = (date - TODAY) / (1000*60*60*24*365.25); return diffYears * this.PIXELS_PER_YEAR; }
+            getY(type) { if(type==='event') return OFFSET_EVENT; if(type==='forecast') return OFFSET_FORECAST; return OFFSET_DEAL; }
             render() {
                 this.track.innerHTML = '';
                 this.track.style.transform = `translate(calc(-50% + ${this.offsetX}px), -50%) scale(${this.scale})`;
                 for(let y=2014; y<=2035; y++) {
                     const x = (y - TODAY.getFullYear()) * this.PIXELS_PER_YEAR;
-                    const el = document.createElement('div');
-                    el.className = 'timeline-year';
-                    el.style.left = `${x}px`;
-                    el.style.transform = `translateX(-50%) scale(${1/this.scale})`;
-                    el.innerHTML = `<div class="year-star"></div><span>${y}</span>`;
-                    this.track.appendChild(el);
-                    if(this.scale>1.2) {
-                        for(let m=0; m<12; m++) {
-                            const mx = x + ((m+1)/12)*this.PIXELS_PER_YEAR;
-                            const mel = document.createElement('div');
-                            mel.className = 'timeline-month visible';
-                            mel.style.left = `${mx}px`;
-                            mel.style.transform = `translateX(-50%) scale(${1/this.scale})`;
-                            mel.innerText = MONTHS[m];
-                            this.track.appendChild(mel);
-                        }
-                    }
+                    const el = document.createElement('div'); el.className = 'timeline-year'; el.style.left = `${x}px`; el.style.transform = `translateX(-50%) scale(${1/this.scale})`;
+                    el.innerHTML = `<div class="year-star"></div><span>${y}</span>`; this.track.appendChild(el);
+                    if(this.scale>1.2) for(let m=0; m<12; m++) { const mx = x + ((m+1)/12)*this.PIXELS_PER_YEAR; const mel = document.createElement('div'); mel.className = 'timeline-month visible'; mel.style.left = `${mx}px`; mel.style.transform = `translateX(-50%) scale(${1/this.scale})`; mel.innerText = MONTHS[m]; this.track.appendChild(mel); }
                 }
                 allData.forEach(item => {
                     if (!item.date) return;
-                    const x = this.getX(item.date);
-                    const y = this.getY(item.type);
-                    const node = document.createElement('div');
-                    node.className = `timeline-node node-${item.type}`;
-                    node.style.left = `${x}px`;
-                    node.style.top = `calc(50% + ${y}px)`;
-                    
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'timeline-node-tooltip';
-                    let tooltipText = item.shortDesc || item.val || '';
-                    tooltip.innerHTML = `<div class="tooltip-title">${item.title}</div><div class="tooltip-desc">${tooltipText}</div>`;
-                    node.appendChild(tooltip);
-                    
-                    node.onclick = (e) => {
-                        e.stopPropagation();
-                        if(item.type === 'deal') {
-                            navigateTo('current-deals');
-                        } else {
-                            this.showDetails(item);
-                        }
-                    };
+                    const x = this.getX(item.date); const y = this.getY(item.type);
+                    const node = document.createElement('div'); node.className = `timeline-node node-${item.type}`; node.style.left = `${x}px`; node.style.top = `calc(50% + ${y}px)`;
+                    const tooltip = document.createElement('div'); tooltip.className = 'timeline-node-tooltip'; let tooltipText = item.shortDesc || item.val || ''; tooltip.innerHTML = `<div class="tooltip-title">${item.title}</div><div class="tooltip-desc">${tooltipText}</div>`; node.appendChild(tooltip);
+                    node.onclick = (e) => { e.stopPropagation(); if(item.type === 'deal') navigateTo('current-deals'); else this.showDetails(item); };
                     this.track.appendChild(node);
                 });
-                const today = document.createElement('div');
-                today.className = 'timeline-node node-today';
-                today.style.left = '0px'; today.style.top = '50%';
-                this.track.appendChild(today);
+                const today = document.createElement('div'); today.className = 'timeline-node node-today'; today.style.left = '0px'; today.style.top = '50%'; this.track.appendChild(today);
             }
             showDetails(item) {
                 const panel = document.getElementById('detailsPanel');
-                document.getElementById('detailType').innerText = item.type==='event'?'СОБЫТИЕ':'ПРОГНОЗ';
-                document.getElementById('detailType').style.color = item.type==='event'?'var(--green-blue)':'var(--red-blue)';
+                document.getElementById('detailType').innerText = item.type==='event'?'СОБЫТИЕ':'ПРОГНОЗ'; document.getElementById('detailType').style.color = item.type==='event'?'var(--green-blue)':'var(--red-blue)';
                 document.getElementById('detailDate').innerText = new Date(item.date).toLocaleDateString('ru-RU',{year:'numeric',month:'long'});
-                document.getElementById('detailTitle').innerText = item.title;
-                document.getElementById('detailValue').innerText = item.val;
-                document.getElementById('detailDesc').innerHTML = item.fullDesc || '';
+                document.getElementById('detailTitle').innerText = item.title; document.getElementById('detailValue').innerText = item.val; document.getElementById('detailDesc').innerHTML = item.fullDesc || '';
                 document.getElementById('detailBenefits').innerHTML = item.benefits ? `<strong>🎯 Выгода для ALTAIR PRIME:</strong><br>${item.benefits}` : '';
                 document.getElementById('detailSource').innerHTML = `📌 Источник: ${makeTextLinksClickable(item.source)}`;
-                panel.classList.add('active');
-                panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+                panel.classList.add('active'); panel.scrollIntoView({behavior:'smooth',block:'nearest'});
             }
             bindEvents() {
                 this.container.onmousedown = (e)=>{ if(e.target.closest('.timeline-node')) return; this.isDragging=true; this.startX=e.clientX; this.targetOffsetX=this.offsetX; this.container.style.cursor='grabbing'; };
                 window.onmousemove = (e)=>{ if(!this.isDragging) return; this.targetOffsetX += e.clientX - this.startX; this.startX = e.clientX; };
                 window.onmouseup = ()=>{ this.isDragging=false; this.container.style.cursor='grab'; };
-                this.container.onwheel = (e)=>{
-                    e.preventDefault();
-                    const rect = this.container.getBoundingClientRect();
-                    const mouseX = e.clientX - rect.left;
-                    const trackCenterX = this.containerCenterX + this.targetOffsetX;
-                    const mouseOffset = mouseX - trackCenterX;
-                    const oldScale = this.targetScale;
-                    this.targetScale = Math.min(4, Math.max(0.5, this.targetScale - e.deltaY*0.001));
-                    const ratio = this.targetScale / oldScale;
-                    this.targetOffsetX = this.targetOffsetX * ratio + mouseOffset * (1 - ratio);
-                };
+                this.container.onwheel = (e)=>{ e.preventDefault(); const rect = this.container.getBoundingClientRect(); const mouseX = e.clientX - rect.left; const trackCenterX = this.containerCenterX + this.targetOffsetX; const mouseOffset = mouseX - trackCenterX; const oldScale = this.targetScale; this.targetScale = Math.min(4, Math.max(0.5, this.targetScale - e.deltaY*0.001)); const ratio = this.targetScale / oldScale; this.targetOffsetX = this.targetOffsetX * ratio + mouseOffset * (1 - ratio); };
             }
         }
-
-        // Глобальные функции управления таймлайном
         window.resetTimeline = function() { if(timelineInstance) { timelineInstance.targetScale=1; timelineInstance.targetOffsetX=0; } };
         window.zoomTimeline = function(delta) { if(timelineInstance) timelineInstance.targetScale = Math.min(4,Math.max(0.5,timelineInstance.targetScale+delta)); };
 
-        // ================= 10. ОТРИСОВКА КАРТОЧЕК (Projects) =================
+        // ================= 8. ОТРИСОВКА КАРТОЧЕК =================
         function renderDealsGrid(limit = null) {
             const grid = document.getElementById('dealsGrid');
             const showAll = (limit === null || limit >= deals.length);
             const itemsToShow = showAll ? deals : deals.slice(0, limit);
             if (!deals.length) { grid.innerHTML = '<div class="loading-message">Нет данных</div>'; return; }
-            
-            grid.innerHTML = itemsToShow.map(deal => `
-                <div class="deal-card visible" data-id="${deal.id}">
-                    <div class="deal-image"><img src="${deal.photo}" alt=""></div>
-                    <div class="deal-content">
-                        <div>
-                            <div class="deal-header-info">
-                                <span class="deal-date">${new Date(deal.date).toLocaleDateString('ru-RU')}</span>
-                                <span style="color:var(--green-blue)">${deal.profit}</span>
-                            </div>
-                            <div class="deal-title">${deal.title}</div>
-                            <div class="deal-stats">
-                                <div class="deal-stat-item"><span class="deal-stat-label">Цена</span><span class="deal-stat-value">${deal.val}</span></div>
-                                <div class="deal-stat-item"><span class="deal-stat-label">Площадь</span><span class="deal-stat-value">${deal.area} м²</span></div>
-                                <div class="deal-stat-item"><span class="deal-stat-label">Аренда</span><span class="deal-stat-value">${deal.rent.toLocaleString()} ₽</span></div>
-                            </div>
-                            <div class="deal-excerpt">${deal.shortDesc}</div>
-                            <div class="deal-full">${deal.fullDesc}</div>
-                            ${deal.benefits ? `<div class="deal-benefits"><strong>🎯 Выгода:</strong><br>${deal.benefits}</div>` : ''}
-                            ${deal.smartbuy ? `<div class="deal-smartbuy"><strong>🧠 Умная покупка:</strong><br>${deal.smartbuy}</div>` : ''}
-                        </div>
-                        <div class="deal-actions">
-                            <button class="deal-toggle-btn" onclick="toggleDealDescription('${deal.id}')">Подробнее ↓</button>
-                            <span style="color:${deal.status==='Продано'?'#ff4a6d':'#888'}">${deal.status}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            const btn = document.getElementById('dealsBtn');
-            if(btn) btn.textContent = showAll ? `Скрыть (${deals.length})` : `Показать все (${deals.length})`;
+            grid.innerHTML = itemsToShow.map(deal => `<div class="deal-card visible" data-id="${deal.id}"><div class="deal-image"><img src="${deal.photo}" alt=""></div><div class="deal-content"><div><div class="deal-header-info"><span class="deal-date">${new Date(deal.date).toLocaleDateString('ru-RU')}</span><span style="color:var(--green-blue)">${deal.profit}</span></div><div class="deal-title">${deal.title}</div><div class="deal-stats"><div class="deal-stat-item"><span class="deal-stat-label">Цена</span><span class="deal-stat-value">${deal.val}</span></div><div class="deal-stat-item"><span class="deal-stat-label">Площадь</span><span class="deal-stat-value">${deal.area} м²</span></div><div class="deal-stat-item"><span class="deal-stat-label">Аренда</span><span class="deal-stat-value">${deal.rent.toLocaleString()} ₽</span></div></div><div class="deal-excerpt">${deal.shortDesc}</div><div class="deal-full">${deal.fullDesc}</div>${deal.benefits ? `<div class="deal-benefits"><strong>🎯 Выгода:</strong><br>${deal.benefits}</div>` : ''}${deal.smartbuy ? `<div class="deal-smartbuy"><strong>🧠 Умная покупка:</strong><br>${deal.smartbuy}</div>` : ''}</div><div class="deal-actions"><button class="deal-toggle-btn" onclick="toggleDealDescription('${deal.id}')">Подробнее ↓</button><span style="color:${deal.status==='Продано'?'#ff4a6d':'#888'}">${deal.status}</span></div></div></div>`).join('');
+            const btn = document.getElementById('dealsBtn'); if(btn) btn.textContent = showAll ? `Скрыть (${deals.length})` : `Показать все (${deals.length})`;
         }
-
         function renderEventsGrid(limit = null) {
             const grid = document.getElementById('eventsGrid');
             const showAll = (limit === null || limit >= events.length);
             const itemsToShow = showAll ? events : events.slice(0, limit);
             if (!events.length) { grid.innerHTML = '<div class="loading-message">Нет данных</div>'; return; }
-            
-            grid.innerHTML = itemsToShow.map(ev => `
-                <div class="info-card" data-id="${ev.id}" data-type="event" onclick="toggleCardDescription('${ev.id}', 'event')">
-                    <div class="info-date" style="color:var(--green-blue)">${new Date(ev.date).toLocaleDateString('ru-RU')}</div>
-                    <div class="info-title">${ev.title}</div>
-                    <div class="info-excerpt">${ev.shortDesc}</div>
-                    <div class="info-full">${ev.fullDesc}<br><br><strong>📌 Источник:</strong> ${ev.source}</div>
-                    ${ev.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${ev.benefits}</div>` : ''}
-                    <button class="info-toggle-btn" onclick="toggleCardDescription('${ev.id}', 'event'); event.stopPropagation();">Читать далее ↓</button>
-                </div>
-            `).join('');
-            const btn = document.getElementById('eventsBtn');
-            if(btn) btn.textContent = showAll ? `Скрыть (${events.length})` : `Показать все (${events.length})`;
+            grid.innerHTML = itemsToShow.map(ev => `<div class="info-card" data-id="${ev.id}" data-type="event" onclick="toggleCardDescription('${ev.id}', 'event')"><div class="info-date" style="color:var(--green-blue)">${new Date(ev.date).toLocaleDateString('ru-RU')}</div><div class="info-title">${ev.title}</div><div class="info-excerpt">${ev.shortDesc}</div><div class="info-full">${ev.fullDesc}<br><br><strong>📌 Источник:</strong> ${ev.source}</div>${ev.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${ev.benefits}</div>` : ''}<button class="info-toggle-btn" onclick="toggleCardDescription('${ev.id}', 'event'); event.stopPropagation();">Читать далее ↓</button></div>`).join('');
+            const btn = document.getElementById('eventsBtn'); if(btn) btn.textContent = showAll ? `Скрыть (${events.length})` : `Показать все (${events.length})`;
         }
-
         function renderForecastsGrid(limit = null) {
             const grid = document.getElementById('forecastsGrid');
             const showAll = (limit === null || limit >= forecasts.length);
             const itemsToShow = showAll ? forecasts : forecasts.slice(0, limit);
             if (!forecasts.length) { grid.innerHTML = '<div class="loading-message">Нет данных</div>'; return; }
-            
-            grid.innerHTML = itemsToShow.map(fc => `
-                <div class="info-card" data-id="${fc.id}" data-type="forecast" onclick="toggleCardDescription('${fc.id}', 'forecast')">
-                    <div class="info-date" style="color:var(--red-blue)">${new Date(fc.date).toLocaleDateString('ru-RU')}</div>
-                    <div class="info-title">${fc.title}</div>
-                    <div class="info-excerpt">${fc.shortDesc}</div>
-                    <div class="info-full">${fc.fullDesc}<br><br><strong>📌 Источник:</strong> ${fc.source}</div>
-                    ${fc.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${fc.benefits}</div>` : ''}
-                    <button class="info-toggle-btn" onclick="toggleCardDescription('${fc.id}', 'forecast'); event.stopPropagation();">Читать далее ↓</button>
-                </div>
-            `).join('');
-            const btn = document.getElementById('forecastsBtn');
-            if(btn) btn.textContent = showAll ? `Скрыть (${forecasts.length})` : `Показать все (${forecasts.length})`;
+            grid.innerHTML = itemsToShow.map(fc => `<div class="info-card" data-id="${fc.id}" data-type="forecast" onclick="toggleCardDescription('${fc.id}', 'forecast')"><div class="info-date" style="color:var(--red-blue)">${new Date(fc.date).toLocaleDateString('ru-RU')}</div><div class="info-title">${fc.title}</div><div class="info-excerpt">${fc.shortDesc}</div><div class="info-full">${fc.fullDesc}<br><br><strong>📌 Источник:</strong> ${fc.source}</div>${fc.benefits ? `<div class="info-benefits"><strong>🎯 Выгода:</strong><br>${fc.benefits}</div>` : ''}<button class="info-toggle-btn" onclick="toggleCardDescription('${fc.id}', 'forecast'); event.stopPropagation();">Читать далее ↓</button></div>`).join('');
+            const btn = document.getElementById('forecastsBtn'); if(btn) btn.textContent = showAll ? `Скрыть (${forecasts.length})` : `Показать все (${forecasts.length})`;
         }
 
-        // ================= 11. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =================
-        window.toggleDealDescription = function(id) {
-            const card = document.querySelector(`.deal-card[data-id="${id}"]`);
-            if(!card) return;
-            card.classList.toggle('expanded');
-            const btn = card.querySelector('.deal-toggle-btn');
-            btn.innerText = card.classList.contains('expanded') ? 'Свернуть ↑' : 'Подробнее ↓';
-        };
-        window.toggleCardDescription = function(id, type) {
-            const card = document.querySelector(`[data-id="${id}"][data-type="${type}"]`);
-            if(!card) return;
-            card.classList.toggle('expanded');
-            const btn = card.querySelector('.info-toggle-btn');
-            btn.innerText = card.classList.contains('expanded') ? 'Свернуть ↑' : 'Читать далее ↓';
-        };
+        window.toggleDealDescription = function(id) { const card = document.querySelector(`.deal-card[data-id="${id}"]`); if(!card) return; card.classList.toggle('expanded'); const btn = card.querySelector('.deal-toggle-btn'); btn.innerText = card.classList.contains('expanded') ? 'Свернуть ↑' : 'Подробнее ↓'; };
+        window.toggleCardDescription = function(id, type) { const card = document.querySelector(`[data-id="${id}"][data-type="${type}"]`); if(!card) return; card.classList.toggle('expanded'); const btn = card.querySelector('.info-toggle-btn'); btn.innerText = card.classList.contains('expanded') ? 'Свернуть ↑' : 'Читать далее ↓'; };
+        window.toggleDealsSection = function() { const btn = document.getElementById('dealsBtn'); const isExpanded = btn.classList.contains('expanded'); renderDealsGrid(isExpanded ? 3 : null); btn.classList.toggle('expanded'); };
+        window.toggleEventsSection = function() { const btn = document.getElementById('eventsBtn'); const isExpanded = btn.classList.contains('expanded'); renderEventsGrid(isExpanded ? 6 : null); btn.classList.toggle('expanded'); };
+        window.toggleForecastsSection = function() { const btn = document.getElementById('forecastsBtn'); const isExpanded = btn.classList.contains('expanded'); renderForecastsGrid(isExpanded ? 6 : null); btn.classList.toggle('expanded'); };
+        window.calculateROI = function() { const price = parseFloat(document.getElementById('calcPrice').value) || 0; const repair = parseFloat(document.getElementById('calcRepair').value) || 0; const shares = parseFloat(document.getElementById('calcShares').value) || 1; const rent = parseFloat(document.getElementById('calcRent').value) || 0; const commission = settings.commission_rate || 0.85; const total = price + repair; const monthly = (rent * shares) * commission; const roi = total > 0 ? ((monthly * 12) / total) * 100 : 0; document.getElementById('resTotal').innerText = total.toLocaleString() + ' ₽'; document.getElementById('resMonthly').innerText = Math.round(monthly / shares).toLocaleString() + ' ₽'; document.getElementById('resROI').innerText = roi.toFixed(2) + '%'; };
 
-        window.toggleDealsSection = function() {
-            const btn = document.getElementById('dealsBtn');
-            const isExpanded = btn.classList.contains('expanded');
-            renderDealsGrid(isExpanded ? 3 : null);
-            btn.classList.toggle('expanded');
-        };
-        window.toggleEventsSection = function() {
-            const btn = document.getElementById('eventsBtn');
-            const isExpanded = btn.classList.contains('expanded');
-            renderEventsGrid(isExpanded ? 6 : null);
-            btn.classList.toggle('expanded');
-        };
-        window.toggleForecastsSection = function() {
-            const btn = document.getElementById('forecastsBtn');
-            const isExpanded = btn.classList.contains('expanded');
-            renderForecastsGrid(isExpanded ? 6 : null);
-            btn.classList.toggle('expanded');
-        };
-
-        window.calculateROI = function() {
-            const price = parseFloat(document.getElementById('calcPrice').value) || 0;
-            const repair = parseFloat(document.getElementById('calcRepair').value) || 0;
-            const shares = parseFloat(document.getElementById('calcShares').value) || 1;
-            const rent = parseFloat(document.getElementById('calcRent').value) || 0;
-            const commission = settings.commission_rate || 0.85;
-            const total = price + repair;
-            const monthly = (rent * shares) * commission;
-            const roi = total > 0 ? ((monthly * 12) / total) * 100 : 0;
-            
-            document.getElementById('resTotal').innerText = total.toLocaleString() + ' ₽';
-            document.getElementById('resMonthly').innerText = Math.round(monthly / shares).toLocaleString() + ' ₽';
-            document.getElementById('resROI').innerText = roi.toFixed(2) + '%';
-        };
-
-        // ================= 12. АВТОРИЗАЦИЯ И КАБИНЕТ =================
-        let currentUser = null;
-
-        async function loginUser(email, password) {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                alert('Ошибка входа: ' + error.message);
-                return false;
-            }
-            currentUser = data.user;
-            showDashboard();
-            return true;
+        // ================= 9. ЛОГИКА НОВОГО КАБИНЕТА =================
+        async function updateDashboardData() {
+            if (!currentUser) return;
+            const demoInvestments = [
+                { title: "ЖК «Патриаршие Сады»", amount: 52000000, share: 25, profit: 12480000, roi: 24 },
+                { title: "ЖК «Отрадное»", amount: 24000000, share: 25, profit: 5760000, roi: 24 }
+            ];
+            const totalPortfolio = demoInvestments.reduce((sum, inv) => sum + inv.amount, 0);
+            const totalIncome = demoInvestments.reduce((sum, inv) => sum + inv.profit, 0);
+            const avgROI = (totalIncome / totalPortfolio * 100).toFixed(1);
+            document.getElementById('total-portfolio-value').innerText = totalPortfolio.toLocaleString() + ' ₽';
+            document.getElementById('total-income').innerText = totalIncome.toLocaleString() + ' ₽';
+            document.getElementById('avg-roi').innerText = avgROI + '%';
+            document.getElementById('active-deals-count').innerText = demoInvestments.length;
+            const ctx = document.getElementById('growthChart')?.getContext('2d');
+            if (ctx && growthChart) growthChart.destroy();
+            if (ctx) growthChart = new Chart(ctx, { type: 'line', data: { labels: ['2022', '2023', '2024', '2025', '2026 (прогноз)'], datasets: [{ label: 'Стоимость портфеля (млн ₽)', data: [45, 62, 78, 89, 102], borderColor: '#00d2ff', backgroundColor: 'rgba(0,210,255,0.1)', tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: true } });
+            const forecastCtx = document.getElementById('forecastChart')?.getContext('2d');
+            if (forecastCtx && forecastChart) forecastChart.destroy();
+            if (forecastCtx) forecastChart = new Chart(forecastCtx, { type: 'line', data: { labels: ['2024', '2025', '2026', '2027', '2028'], datasets: [{ label: 'Средняя цена элитной недвижимости (млн ₽)', data: [48, 52, 57, 63, 70], borderColor: '#00d4aa', backgroundColor: 'rgba(0,212,170,0.1)', tension: 0.4 }] } });
+            const portfolioContainer = document.getElementById('portfolio-list');
+            portfolioContainer.innerHTML = demoInvestments.map(inv => `<div class="deal-card visible"><div class="deal-content"><div class="deal-title">${inv.title}</div><div class="deal-stats"><div class="deal-stat-item"><span class="deal-stat-label">Сумма</span><span class="deal-stat-value">${inv.amount.toLocaleString()} ₽</span></div><div class="deal-stat-item"><span class="deal-stat-label">Доля</span><span class="deal-stat-value">${inv.share}%</span></div><div class="deal-stat-item"><span class="deal-stat-label">Заработано</span><span class="deal-stat-value profit">+${inv.profit.toLocaleString()} ₽</span></div></div><div class="deal-actions"><button class="deal-toggle-btn" onclick="alert('Функция продажи доли в разработке')">Продать долю</button></div></div></div>`).join('');
         }
 
-        async function registerUser(email, password) {
-            const { data, error } = await supabaseClient.auth.signUp({ email, password });
-            if (error) {
-                alert('Ошибка регистрации: ' + error.message);
-                return false;
-            }
-            alert('Регистрация успешна! Теперь войдите.');
-            document.getElementById('register-box').style.display = 'none';
-            document.getElementById('login-box').style.display = 'block';
-            return true;
+        function appendMessage(text, isManager) {
+            const container = document.getElementById('chat-messages');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.style.cssText = `display: flex; justify-content: ${isManager ? 'flex-start' : 'flex-end'}; margin-bottom: 12px;`;
+            div.innerHTML = `<div style="max-width: 70%; background: ${isManager ? 'rgba(0,210,255,0.1)' : 'rgba(0,212,170,0.1)'}; border-radius: 18px; padding: 10px 16px;"><strong style="color: ${isManager ? '#00d2ff' : '#00d4aa'};">${isManager ? 'Менеджер' : 'Вы'}</strong><p style="margin-top: 5px;">${text.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; })}</p><small style="color: #888;">${new Date().toLocaleTimeString()}</small></div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
         }
 
-        async function logoutUser() {
-            await supabaseClient.auth.signOut();
-            currentUser = null;
-            showAuthForms();
+        async function initChat() {
+            const messagesContainer = document.getElementById('chat-messages');
+            const input = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-message-btn');
+            if (!messagesContainer || !input || !sendBtn) return;
+            if (chatSubscription) await supabaseClient.removeSubscription(chatSubscription);
+            chatSubscription = supabaseClient.channel('messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => { const msg = payload.new; if (msg.user_id === currentUser.id || msg.is_from_manager) appendMessage(msg.message, msg.is_from_manager); }).subscribe();
+            const { data: history } = await supabaseClient.from('messages').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: true });
+            messagesContainer.innerHTML = '';
+            history?.forEach(msg => appendMessage(msg.message, msg.is_from_manager));
+            sendBtn.onclick = async () => { const text = input.value.trim(); if (!text) return; await supabaseClient.from('messages').insert({ user_id: currentUser.id, message: text, is_from_manager: false }); input.value = ''; };
         }
+
+        function initTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => { btn.removeEventListener('click', tabClickHandler); btn.addEventListener('click', tabClickHandler); });
+        }
+        function tabClickHandler(e) { const btn = e.currentTarget; const tabId = btn.getAttribute('data-tab'); document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none'); const activeTab = document.getElementById(`tab-${tabId}`); if (activeTab) activeTab.style.display = 'block'; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if (tabId === 'chat') initChat(); }
 
         async function showDashboard() {
             document.getElementById('auth-forms').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('user-email').innerText = currentUser.email;
-            
-            const investmentsDiv = document.getElementById('user-investments');
-            investmentsDiv.innerHTML = '<p>Загрузка ваших инвестиций...</p>';
-            // Заглушка — здесь можно подставить реальные данные из таблицы investments
-            investmentsDiv.innerHTML = `
-                <div class="deal-card visible" style="margin-bottom: 15px;">
-                    <div class="deal-content">
-                        <div class="deal-title">ЖК «Патриаршие Сады»</div>
-                        <div class="deal-stats">
-                            <div class="deal-stat-item"><span class="deal-stat-label">Сумма</span><span class="deal-stat-value">52 000 000 ₽</span></div>
-                            <div class="deal-stat-item"><span class="deal-stat-label">Доля</span><span class="deal-stat-value">25%</span></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="deal-card visible">
-                    <div class="deal-content">
-                        <div class="deal-title">ЖК «Отрадное»</div>
-                        <div class="deal-stats">
-                            <div class="deal-stat-item"><span class="deal-stat-label">Сумма</span><span class="deal-stat-value">24 000 000 ₽</span></div>
-                            <div class="deal-stat-item"><span class="deal-stat-label">Доля</span><span class="deal-stat-value">25%</span></div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            document.getElementById('user-email-dashboard').innerText = currentUser.email;
+            await updateDashboardData();
+            document.querySelector('.tab-btn[data-tab="overview"]').click();
         }
 
-        function showAuthForms() {
-            document.getElementById('auth-forms').style.display = 'block';
-            document.getElementById('dashboard').style.display = 'none';
-            document.getElementById('login-email').value = '';
-            document.getElementById('login-password').value = '';
-            document.getElementById('reg-email').value = '';
-            document.getElementById('reg-password').value = '';
+        // ================= 10. АВТОРИЗАЦИЯ =================
+        async function loginUser(email, password) {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) { alert('Ошибка входа: ' + error.message); return false; }
+            currentUser = data.user; showDashboard(); return true;
         }
-
-        async function checkSession() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                currentUser = session.user;
-                showDashboard();
-            } else {
-                showAuthForms();
-            }
+        async function registerUser(email, password) {
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) { alert('Ошибка регистрации: ' + error.message); return false; }
+            alert('Регистрация успешна! Теперь войдите.'); document.getElementById('register-box').style.display = 'none'; document.getElementById('login-box').style.display = 'block'; return true;
         }
+        async function logoutUser() { await supabaseClient.auth.signOut(); currentUser = null; showAuthForms(); }
+        function showAuthForms() { document.getElementById('auth-forms').style.display = 'block'; document.getElementById('dashboard').style.display = 'none'; document.getElementById('login-email').value = ''; document.getElementById('login-password').value = ''; document.getElementById('reg-email').value = ''; document.getElementById('reg-password').value = ''; }
+        async function checkSession() { const { data: { session } } = await supabaseClient.auth.getSession(); if (session) { currentUser = session.user; showDashboard(); } else { showAuthForms(); } }
 
-        // ================= 13. НАВИГАЦИЯ =================
+        // ================= 11. НАВИГАЦИЯ =================
         window.navigateTo = function(pageId) {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
@@ -1418,55 +977,29 @@ async function showDashboard() {
             if(link) link.classList.add('active');
             document.getElementById('navLinks').classList.remove('active');
             window.scrollTo(0, 0);
-            
             if(pageId === 'projects' && timelineInstance) timelineInstance.render();
             if(pageId === 'current-deals') renderCurrentDealsPage();
         };
         window.toggleMenu = function() { document.getElementById('navLinks').classList.toggle('active'); };
 
-        // ================= 14. ЗАПУСК =================
+        // ================= 12. ЗАПУСК =================
         window.onload = async () => {
             initStarfield();
             await loadSettings();
             await loadAllData();
-            
             timelineInstance = new Timeline();
             renderDealsGrid(3);
             renderEventsGrid(6);
             renderForecastsGrid(6);
             window.calculateROI();
-            
-            // Назначение обработчиков для кнопок авторизации
-            document.getElementById('do-login').onclick = () => {
-                const email = document.getElementById('login-email').value;
-                const pass = document.getElementById('login-password').value;
-                loginUser(email, pass);
-            };
-            document.getElementById('do-register').onclick = () => {
-                const email = document.getElementById('reg-email').value;
-                const pass = document.getElementById('reg-password').value;
-                if (pass.length < 6) {
-                    alert('Пароль должен быть не менее 6 символов');
-                    return;
-                }
-                registerUser(email, pass);
-            };
+            document.getElementById('do-login').onclick = () => { const email = document.getElementById('login-email').value; const pass = document.getElementById('login-password').value; loginUser(email, pass); };
+            document.getElementById('do-register').onclick = () => { const email = document.getElementById('reg-email').value; const pass = document.getElementById('reg-password').value; if (pass.length < 6) { alert('Пароль должен быть не менее 6 символов'); return; } registerUser(email, pass); };
             document.getElementById('logout-btn').onclick = () => logoutUser();
-            
-            document.getElementById('show-register').onclick = (e) => {
-                e.preventDefault();
-                document.getElementById('login-box').style.display = 'none';
-                document.getElementById('register-box').style.display = 'block';
-            };
-            document.getElementById('show-login').onclick = (e) => {
-                e.preventDefault();
-                document.getElementById('register-box').style.display = 'none';
-                document.getElementById('login-box').style.display = 'block';
-            };
-            
+            document.getElementById('show-register').onclick = (e) => { e.preventDefault(); document.getElementById('login-box').style.display = 'none'; document.getElementById('register-box').style.display = 'block'; };
+            document.getElementById('show-login').onclick = (e) => { e.preventDefault(); document.getElementById('register-box').style.display = 'none'; document.getElementById('login-box').style.display = 'block'; };
+            initTabs();
             await checkSession();
         };
     </script>
-                    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>
