@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Supabase JS библиотека -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* ================= 1. БАЗОВЫЕ СТИЛИ И ПЕРЕМЕННЫЕ ================= */
@@ -480,7 +479,6 @@
         <!-- 8. AUTH & DASHBOARD -->
         <section id="auth" class="page-section">
             <div class="container" style="max-width: 500px; margin: 0 auto; padding-top: 40px;">
-                <!-- Блок входа/регистрации -->
                 <div id="auth-forms">
                     <div id="login-box" style="background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 16px; padding: 30px;">
                         <h2 style="text-align: center; margin-bottom: 20px;">Вход</h2>
@@ -497,7 +495,6 @@
                         <p style="text-align: center; margin-top: 20px;">Уже есть аккаунт? <a href="#" id="show-login">Войти</a></p>
                     </div>
                 </div>
-                <!-- Блок личного кабинета -->
                 <div id="dashboard" style="display: none; background: var(--bg-card); border: 1px solid var(--primary-blue); border-radius: 16px; padding: 30px;">
                     <h2>Добро пожаловать, <span id="user-email"></span>!</h2>
                     <hr style="margin: 20px 0; border-color: rgba(0,210,255,0.2);">
@@ -571,7 +568,7 @@
         // ================= 2. ИНИЦИАЛИЗАЦИЯ SUPABASE =================
         const SUPABASE_URL = 'https://vlrpekzoqpadonfwqvjv.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_5_7stu11ivaab_-__cudTA_TbXzNGZD';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ================= 3. КОНСТАНТЫ И ПЕРЕМЕННЫЕ =================
         const MONTHS = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
@@ -585,6 +582,7 @@
         let events = [];
         let forecasts = [];
         let settings = {};
+        let timelineInstance = null;
 
         // ================= 4. ЗАГРУЗКА НАСТРОЕК (Google Sheets) =================
         const SETTINGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQej5JHY9Yl3-cyq_3UfCuy2-iSTSJ4vz0yftxDWD04m231xiJmeVIE46BcbK1ZzHdChPSf0fc_jUqp/pub?output=csv&gid=114192626';
@@ -657,6 +655,9 @@
                 events = eventsRec.map(r => ({
                     id: r.id, type: 'event', date: r.fields.Date, title: r.fields.Title,
                     fullDesc: makeTextLinksClickable(r.fields.Description || ''),
+                    shortDesc: (makeTextLinksClickable(r.fields.Description || '')).length > 150 ? 
+                               (makeTextLinksClickable(r.fields.Description || '')).substring(0, 150) + '...' : 
+                               makeTextLinksClickable(r.fields.Description || ''),
                     val: r.fields.Impact || '', source: r.fields.Source || '',
                     benefits: makeTextLinksClickable(r.fields.Benefits || '')
                 }));
@@ -664,23 +665,25 @@
                 forecasts = forecastsRec.map(r => ({
                     id: r.id, type: 'forecast', date: r.fields.Date, title: r.fields.Title,
                     fullDesc: makeTextLinksClickable(r.fields.Description || ''),
+                    shortDesc: (makeTextLinksClickable(r.fields.Description || '')).length > 150 ? 
+                               (makeTextLinksClickable(r.fields.Description || '')).substring(0, 150) + '...' : 
+                               makeTextLinksClickable(r.fields.Description || ''),
                     val: r.fields.Impact || '', source: r.fields.Source || '',
                     benefits: makeTextLinksClickable(r.fields.Benefits || '')
                 }));
-                
-                events.forEach(e => e.shortDesc = e.fullDesc.length > 150 ? e.fullDesc.substring(0, 150) + '...' : e.fullDesc);
-                forecasts.forEach(f => f.shortDesc = f.fullDesc.length > 150 ? f.fullDesc.substring(0, 150) + '...' : f.fullDesc);
 
                 deals = dealsRec
                     .filter(r => r.fields.Title && r.fields.Rent && r.fields.Area)
                     .map(r => {
                         const purchaseYear = r.fields.Date ? new Date(r.fields.Date).getFullYear() : new Date().getFullYear();
+                        const fullDesc = makeTextLinksClickable(r.fields.Description || '');
                         return {
                             id: r.id, type: 'deal', date: r.fields.Date || '2024-01-01',
                             title: r.fields.Title, val: r.fields.Price || '0 ₽', profit: r.fields.Profit || '0%',
                             area: r.fields.Area, rent: r.fields.Rent, status: r.fields.Status || 'В продаже',
                             location: r.fields.Location || '',
-                            fullDesc: makeTextLinksClickable(r.fields.Description || ''),
+                            fullDesc: fullDesc,
+                            shortDesc: fullDesc.length > 150 ? fullDesc.substring(0, 150) + '...' : fullDesc,
                             benefits: makeTextLinksClickable(r.fields.Benefits || ''),
                             smartbuy: makeTextLinksClickable(r.fields.SmartBuy || ''),
                             photo: r.fields.Photo?.[0]?.url || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80',
@@ -959,9 +962,9 @@
             }
         }
 
-        let timelineInstance;
-        function resetTimeline() { if(timelineInstance) { timelineInstance.targetScale=1; timelineInstance.targetOffsetX=0; } }
-        function zoomTimeline(delta) { if(timelineInstance) timelineInstance.targetScale = Math.min(4,Math.max(0.5,timelineInstance.targetScale+delta)); }
+        // Глобальные функции управления таймлайном
+        window.resetTimeline = function() { if(timelineInstance) { timelineInstance.targetScale=1; timelineInstance.targetOffsetX=0; } };
+        window.zoomTimeline = function(delta) { if(timelineInstance) timelineInstance.targetScale = Math.min(4,Math.max(0.5,timelineInstance.targetScale+delta)); };
 
         // ================= 10. ОТРИСОВКА КАРТОЧЕК (Projects) =================
         function renderDealsGrid(limit = null) {
@@ -997,7 +1000,8 @@
                     </div>
                 </div>
             `).join('');
-            document.getElementById('dealsBtn').textContent = showAll ? `Скрыть (${deals.length})` : `Показать все (${deals.length})`;
+            const btn = document.getElementById('dealsBtn');
+            if(btn) btn.textContent = showAll ? `Скрыть (${deals.length})` : `Показать все (${deals.length})`;
         }
 
         function renderEventsGrid(limit = null) {
@@ -1016,7 +1020,8 @@
                     <button class="info-toggle-btn" onclick="toggleCardDescription('${ev.id}', 'event'); event.stopPropagation();">Читать далее ↓</button>
                 </div>
             `).join('');
-            document.getElementById('eventsBtn').textContent = showAll ? `Скрыть (${events.length})` : `Показать все (${events.length})`;
+            const btn = document.getElementById('eventsBtn');
+            if(btn) btn.textContent = showAll ? `Скрыть (${events.length})` : `Показать все (${events.length})`;
         }
 
         function renderForecastsGrid(limit = null) {
@@ -1035,45 +1040,46 @@
                     <button class="info-toggle-btn" onclick="toggleCardDescription('${fc.id}', 'forecast'); event.stopPropagation();">Читать далее ↓</button>
                 </div>
             `).join('');
-            document.getElementById('forecastsBtn').textContent = showAll ? `Скрыть (${forecasts.length})` : `Показать все (${forecasts.length})`;
+            const btn = document.getElementById('forecastsBtn');
+            if(btn) btn.textContent = showAll ? `Скрыть (${forecasts.length})` : `Показать все (${forecasts.length})`;
         }
 
         // ================= 11. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =================
-        function toggleDealDescription(id) {
+        window.toggleDealDescription = function(id) {
             const card = document.querySelector(`.deal-card[data-id="${id}"]`);
             if(!card) return;
             card.classList.toggle('expanded');
             const btn = card.querySelector('.deal-toggle-btn');
             btn.innerText = card.classList.contains('expanded') ? 'Свернуть ↑' : 'Подробнее ↓';
-        }
-        function toggleCardDescription(id, type) {
+        };
+        window.toggleCardDescription = function(id, type) {
             const card = document.querySelector(`[data-id="${id}"][data-type="${type}"]`);
             if(!card) return;
             card.classList.toggle('expanded');
             const btn = card.querySelector('.info-toggle-btn');
             btn.innerText = card.classList.contains('expanded') ? 'Свернуть ↑' : 'Читать далее ↓';
-        }
+        };
 
-        function toggleDealsSection() {
+        window.toggleDealsSection = function() {
             const btn = document.getElementById('dealsBtn');
             const isExpanded = btn.classList.contains('expanded');
             renderDealsGrid(isExpanded ? 3 : null);
             btn.classList.toggle('expanded');
-        }
-        function toggleEventsSection() {
+        };
+        window.toggleEventsSection = function() {
             const btn = document.getElementById('eventsBtn');
             const isExpanded = btn.classList.contains('expanded');
             renderEventsGrid(isExpanded ? 6 : null);
             btn.classList.toggle('expanded');
-        }
-        function toggleForecastsSection() {
+        };
+        window.toggleForecastsSection = function() {
             const btn = document.getElementById('forecastsBtn');
             const isExpanded = btn.classList.contains('expanded');
             renderForecastsGrid(isExpanded ? 6 : null);
             btn.classList.toggle('expanded');
-        }
+        };
 
-        function calculateROI() {
+        window.calculateROI = function() {
             const price = parseFloat(document.getElementById('calcPrice').value) || 0;
             const repair = parseFloat(document.getElementById('calcRepair').value) || 0;
             const shares = parseFloat(document.getElementById('calcShares').value) || 1;
@@ -1086,13 +1092,13 @@
             document.getElementById('resTotal').innerText = total.toLocaleString() + ' ₽';
             document.getElementById('resMonthly').innerText = Math.round(monthly / shares).toLocaleString() + ' ₽';
             document.getElementById('resROI').innerText = roi.toFixed(2) + '%';
-        }
+        };
 
         // ================= 12. АВТОРИЗАЦИЯ И КАБИНЕТ =================
         let currentUser = null;
 
         async function loginUser(email, password) {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
             if (error) {
                 alert('Ошибка входа: ' + error.message);
                 return false;
@@ -1103,7 +1109,7 @@
         }
 
         async function registerUser(email, password) {
-            const { data, error } = await supabase.auth.signUp({ email, password });
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
             if (error) {
                 alert('Ошибка регистрации: ' + error.message);
                 return false;
@@ -1115,7 +1121,7 @@
         }
 
         async function logoutUser() {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             currentUser = null;
             showAuthForms();
         }
@@ -1127,7 +1133,7 @@
             
             const investmentsDiv = document.getElementById('user-investments');
             investmentsDiv.innerHTML = '<p>Загрузка ваших инвестиций...</p>';
-            // Здесь можно загрузить реальные данные из таблицы investments, пока заглушка
+            // Заглушка — здесь можно подставить реальные данные из таблицы investments
             investmentsDiv.innerHTML = `
                 <div class="deal-card visible" style="margin-bottom: 15px;">
                     <div class="deal-content">
@@ -1160,7 +1166,7 @@
         }
 
         async function checkSession() {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 currentUser = session.user;
                 showDashboard();
@@ -1170,7 +1176,7 @@
         }
 
         // ================= 13. НАВИГАЦИЯ =================
-        function navigateTo(pageId) {
+        window.navigateTo = function(pageId) {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
@@ -1181,8 +1187,8 @@
             
             if(pageId === 'projects' && timelineInstance) timelineInstance.render();
             if(pageId === 'current-deals') renderCurrentDealsPage();
-        }
-        function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
+        };
+        window.toggleMenu = function() { document.getElementById('navLinks').classList.toggle('active'); };
 
         // ================= 14. ЗАПУСК =================
         window.onload = async () => {
@@ -1194,7 +1200,7 @@
             renderDealsGrid(3);
             renderEventsGrid(6);
             renderForecastsGrid(6);
-            calculateROI();
+            window.calculateROI();
             
             // Назначение обработчиков для кнопок авторизации
             document.getElementById('do-login').onclick = () => {
