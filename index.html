@@ -1,1359 +1,545 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>3D Tattoo Studio</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      color: #fff;
-      overflow: hidden;
-      height: 100vh;
-    }
-    #canvas-container {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 1;
-    }
-    #ui-panel {
-      position: absolute;
-      right: 20px; top: 20px;
-      width: 320px;
-      background: rgba(30, 30, 50, 0.95);
-      border-radius: 16px;
-      padding: 20px;
-      z-index: 10;
-      max-height: 95vh;
-      overflow-y: auto;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      border: 1px solid rgba(100,100,255,0.3);
-    }
-    #ui-panel h3 {
-      margin: 15px 0 10px;
-      color: #7c9fff;
-      font-size: 1.1em;
-      border-bottom: 1px solid rgba(100,100,255,0.2);
-      padding-bottom: 8px;
-    }
-    #ui-panel h3:first-child { margin-top: 0; }
-    .control-group { margin-bottom: 15px; }
-    .control-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.95em;
-      color: #ccc;
-    }
-    .control-group input[type="range"] {
-      width: 100%;
-      margin: 5px 0;
-    }
-    .control-group select, 
-    .control-group input[type="text"],
-    .control-group input[type="file"] {
-      width: 100%;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid #444;
-      background: #252540;
-      color: #fff;
-      font-size: 0.95em;
-    }
-    .control-group input[type="color"] {
-      width: 60px;
-      height: 36px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #252540;
-    }
-    .btn {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      font-size: 1em;
-    }
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-    }
-    .btn:active { transform: translateY(0); }
-    .btn.secondary {
-      background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-    }
-    .btn.danger {
-      background: linear-gradient(135deg, #fc8181 0%, #c53030 100%);
-    }
-    .skin-colors {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .skin-color {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 3px solid transparent;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-    .skin-color:hover, .skin-color.active {
-      border-color: #7c9fff;
-      transform: scale(1.1);
-    }
-    #tattoo-input {
-      display: none;
-      margin-top: 10px;
-    }
-    #tattoo-input.show { display: block; }
-    #tattoo-preview {
-      margin-top: 10px;
-      max-width: 100%;
-      border-radius: 8px;
-      display: none;
-    }
-    #tattoo-preview.show { display: block; }
-    #stats-bar {
-      position: absolute;
-      bottom: 20px; left: 50%;
-      transform: translateX(-50%);
-      background: rgba(30,30,50,0.95);
-      padding: 12px 24px;
-      border-radius: 12px;
-      z-index: 10;
-      display: flex;
-      gap: 24px;
-      font-size: 0.95em;
-      border: 1px solid rgba(100,100,255,0.3);
-    }
-    #stats-bar span { color: #7c9fff; font-weight: 600; }
-    #modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
-      z-index: 100;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-    #modal.show { display: flex; }
-    .modal-content {
-      background: #1e1e32;
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 600px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      border: 1px solid rgba(100,100,255,0.4);
-    }
-    .modal-content h3 {
-      color: #7c9fff;
-      margin-bottom: 16px;
-      text-align: center;
-    }
-    .modal-content img {
-      width: 100%;
-      border-radius: 12px;
-      margin: 12px 0;
-      background: #252540;
-    }
-    .modal-content p {
-      margin: 8px 0;
-      line-height: 1.5;
-    }
-    .modal-content .copy-btn {
-      margin-top: 16px;
-      background: linear-gradient(135deg, #38b2ac 0%, #319795 100%);
-    }
-    .loading {
-      text-align: center;
-      padding: 20px;
-      color: #aaa;
-      font-style: italic;
-    }
-    .tattoo-item {
-      position: absolute;
-      cursor: move;
-      user-select: none;
-      z-index: 5;
-      transition: opacity 0.2s;
-    }
-    .tattoo-item:hover {
-      opacity: 0.9;
-    }
-    .tattoo-delete {
-      position: absolute;
-      top: -10px; right: -10px;
-      width: 24px; height: 24px;
-      background: #fc8181;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.2s;
-      border: 2px solid #fff;
-    }
-    .tattoo-item:hover .tattoo-delete { opacity: 1; }
-    #preset-locations {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-    .preset-btn {
-      padding: 6px 12px;
-      font-size: 0.85em;
-      background: #374151;
-      border-radius: 6px;
-      border: none;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .preset-btn:hover { background: #4b5563; }
-    .api-key-input {
-      margin-top: 8px;
-    }
-    .api-key-input input {
-      width: 100%;
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #252540;
-      color: #fff;
-      font-size: 0.9em;
-    }
-    .note {
-      font-size: 0.85em;
-      color: #888;
-      margin-top: 4px;
-      font-style: italic;
-    }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #1a1a2e; }
-    ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #718096; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D Тату Маркетплейс — Прототип</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        /* Панель управления справа */
+        .ui-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 280px;
+            background: rgba(30, 30, 40, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            color: white;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            z-index: 10;
+            pointer-events: auto;
+            font-size: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .ui-panel h3 {
+            margin: 0 0 10px 0;
+            text-align: center;
+        }
+        .ui-panel label {
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border: none;
+            background: #2c2c3a;
+            color: white;
+            cursor: pointer;
+        }
+        button {
+            background: #7c3aed;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #9b59b6;
+        }
+        .zone-buttons {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .zone-buttons button {
+            flex: 1;
+            background: #3b3b4f;
+        }
+        .zone-buttons button.active {
+            background: #e67e22;
+            box-shadow: 0 0 5px orange;
+        }
+        .result {
+            background: #1e1e2a;
+            padding: 8px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 12px;
+            text-align: center;
+        }
+        .status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            color: lime;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        @media (max-width: 700px) {
+            .ui-panel { width: 260px; top: 10px; right: 10px; padding: 10px; }
+            .zone-buttons button { font-size: 10px; }
+        }
+    </style>
 </head>
 <body>
-  <div id="canvas-container"></div>
-  
-  <div id="ui-panel">
-    <h3>👤 Параметры модели</h3>
-    
-    <div class="control-group">
-      <label>Пол</label>
-      <select id="gender">
-        <option value="male">Мужчина</option>
-        <option value="female">Женщина</option>
-      </select>
-    </div>
-    
-    <div class="control-group">
-      <label>Рост: <span id="height-val">1.0</span></label>
-      <input type="range" id="height" min="0.8" max="1.2" step="0.05" value="1.0">
-    </div>
-    
-    <div class="control-group">
-      <label>Вес: <span id="weight-val">1.0</span></label>
-      <input type="range" id="weight" min="0.7" max="1.3" step="0.1" value="1.0">
-    </div>
-    
-    <div class="control-group">
-      <label>Цвет кожи</label>
-      <div class="skin-colors">
-        <div class="skin-color active" style="background:#f5d0b8" data-color="#f5d0b8"></div>
-        <div class="skin-color" style="background:#e8b89a" data-color="#e8b89a"></div>
-        <div class="skin-color" style="background:#c6865c" data-color="#c6865c"></div>
-        <div class="skin-color" style="background:#8d5524" data-color="#8d5524"></div>
-        <div class="skin-color" style="background:#3d2314" data-color="#3d2314"></div>
-      </div>
-    </div>
-    
-    <h3>🖼️ Фото лица</h3>
-    <div class="control-group">
-      <input type="file" id="face-upload" accept="image/*">
-      <p class="note">Фото появится над моделью</p>
-    </div>
-    
-    <h3>🎨 Татуировка</h3>
-    <div class="control-group">
-      <button class="btn" id="gen-tattoo-btn">✨ Сгенерировать тату</button>
-      <div id="tattoo-input">
-        <input type="text" id="tattoo-prompt" placeholder="Например: дракон в стиле ньюскул">
-        <div class="api-key-input">
-          <input type="text" id="api-key" placeholder="API ключ (необязательно)">
-          <p class="note">Без ключа используется демо-режим</p>
+    <div class="ui-panel">
+        <h3>🎨 Тату-ателье 3D</h3>
+        
+        <label>👤 Пол:</label>
+        <select id="gender">
+            <option value="male">Мужчина</option>
+            <option value="female">Женщина</option>
+        </select>
+        
+        <label>📏 Рост (см):</label>
+        <input type="range" id="height" min="0.7" max="1.3" step="0.01" value="1.0">
+        
+        <label>⚖️ Вес / Телосложение:</label>
+        <input type="range" id="weight" min="0.6" max="1.4" step="0.01" value="1.0">
+        
+        <label>🎨 Цвет кожи:</label>
+        <input type="color" id="skinColor" value="#d2a679">
+        
+        <label>📸 Загрузить своё лицо:</label>
+        <input type="file" id="faceUpload" accept="image/jpeg, image/png">
+        
+        <label>🔥 Зона нанесения тату:</label>
+        <div class="zone-buttons">
+            <button data-zone="arm_right">Правая рука</button>
+            <button data-zone="arm_left">Левая рука</button>
+            <button data-zone="chest">Грудь</button>
         </div>
-        <button class="btn" id="generate-tattoo">Генерировать</button>
-        <button class="btn secondary" id="use-fallback">🎲 Случайная тату (демо)</button>
-      </div>
-      <img id="tattoo-preview" alt="Preview">
-    </div>
-    
-    <div class="control-group">
-      <label>Позиция тату (клик)</label>
-      <div id="preset-locations">
-        <button class="preset-btn" data-pos="right-arm">Правая рука</button>
-        <button class="preset-btn" data-pos="chest">Грудь</button>
-        <button class="preset-btn" data-pos="left-leg">Левая нога</button>
-      </div>
-      <p class="note">Перетащите тату мышкой для точной позиции</p>
-    </div>
-    
-    <h3>💾 Экспорт</h3>
-    <div class="control-group">
-      <button class="btn" id="export-btn">📄 Сформировать ТЗ</button>
-      <button class="btn secondary" id="reset-btn">🔄 Сбросить всё</button>
-    </div>
-  </div>
-  
-  <div id="stats-bar">
-    <div>🎨 Краски: <span id="ink-amount">0</span> мл</div>
-    <div>⏱️ Время: <span id="time-estimate">0</span> ч</div>
-    <div>📐 Площадь: <span id="tattoo-area">0</span> см²</div>
-  </div>
-  
-  <div id="modal">
-    <div class="modal-content">
-      <h3>📋 Техническое задание</h3>
-      <div id="modal-screenshot"></div>
-      <p><strong>Параметры модели:</strong></p>
-      <p id="modal-params"></p>
-      <p><strong>Татуировка:</strong></p>
-      <p id="modal-tattoo"></p>
-      <p><strong>Расчёт:</strong></p>
-      <p id="modal-calc"></p>
-      <button class="btn copy-btn" id="copy-tz">📋 Скопировать текст для мастера</button>
-      <button class="btn secondary" id="close-modal" style="margin-top:10px">✕ Закрыть</button>
-    </div>
-  </div>
-
-  <!-- Three.js и дополнения через CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/draco_decoder.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/draco_wasm_wrapper.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/draco_decoder.wasm"></script>
-
-  <script>
-    // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
-    let scene, camera, renderer, controls, model;
-    let skinMaterial, tattooMesh, facePlane;
-    let tattoos = []; // { mesh, position, area, isColor }
-    let currentTattooImage = null;
-    let isDragging = false;
-    let dragOffset = new THREE.Vector2();
-    let selectedTattoo = null;
-    
-    // Демо-татуировки (база64 для работы без сервера)
-    const DEMO_TATTOOS = [
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNui8sowAAAAWdEVYdENyZWF0aW9uIFRpbWUAMDcvMTMvMTNYl7o7AAAGHklEQVR4nO2dW4hVVRjHf+M4amqamZqVpZVl0UVKS6KHqHooeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCeiqCei......The user wants a fully working Three.js tattoo studio in a single HTML file. This is a complex request with many features. Let me create a comprehensive, realistic implementation that will actually work when opened in a browser.
-
-Key challenges:
-1. Three.js model loading - need fallback if GLTF fails
-2. CORS issues with API calls - need mock/fallback behavior
-3. Single file constraint - all code inline
-4. Drag functionality for tattoos - implement with raycasting
-5. Image analysis for color detection - use Canvas API
-6. Screenshot/export - use canvas.toDataURL
-
-I'll create a working prototype with:
-- Fallback 3D model (simple geometry) if GLTF loading fails
-- Mock tattoo generation with demo images
-- Basic drag with raycasting
-- Canvas-based pixel analysis
-- All UI controls functional
-- Clear comments and fallbacks throughout
-
-Let me write the complete code now.
-</think>
-
-# 🎨 3D Tattoo Studio — Полный рабочий код
-
-```html
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>3D Tattoo Studio</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      color: #fff;
-      overflow: hidden;
-      height: 100vh;
-    }
-    #canvas-container {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 1;
-    }
-    #ui-panel {
-      position: absolute;
-      right: 20px; top: 20px;
-      width: 320px;
-      background: rgba(30, 30, 50, 0.95);
-      border-radius: 16px;
-      padding: 20px;
-      z-index: 10;
-      max-height: 95vh;
-      overflow-y: auto;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      border: 1px solid rgba(100,100,255,0.3);
-    }
-    #ui-panel h3 {
-      margin: 15px 0 10px;
-      color: #7c9fff;
-      font-size: 1.1em;
-      border-bottom: 1px solid rgba(100,100,255,0.2);
-      padding-bottom: 8px;
-    }
-    #ui-panel h3:first-child { margin-top: 0; }
-    .control-group { margin-bottom: 15px; }
-    .control-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.95em;
-      color: #ccc;
-    }
-    .control-group input[type="range"] {
-      width: 100%;
-      margin: 5px 0;
-    }
-    .control-group select, 
-    .control-group input[type="text"],
-    .control-group input[type="file"] {
-      width: 100%;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid #444;
-      background: #252540;
-      color: #fff;
-      font-size: 0.95em;
-    }
-    .control-group input[type="color"] {
-      width: 60px; height: 36px;
-      border: none; border-radius: 8px;
-      cursor: pointer; background: #252540;
-    }
-    .btn {
-      width: 100%; padding: 12px; margin: 8px 0;
-      border: none; border-radius: 10px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white; font-weight: 600; cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s; font-size: 1em;
-    }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.5); }
-    .btn:active { transform: translateY(0); }
-    .btn.secondary { background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); }
-    .btn.danger { background: linear-gradient(135deg, #fc8181 0%, #c53030 100%); }
-    
-    .skin-colors { display: flex; gap: 8px; flex-wrap: wrap; }
-    .skin-color {
-      width: 36px; height: 36px; border-radius: 50%;
-      cursor: pointer; border: 3px solid transparent;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-    .skin-color:hover, .skin-color.active {
-      border-color: #7c9fff; transform: scale(1.1);
-    }
-    
-    #tattoo-input { display: none; margin-top: 10px; }
-    #tattoo-input.show { display: block; }
-    #tattoo-preview {
-      margin-top: 10px; max-width: 100%;
-      border-radius: 8px; display: none;
-    }
-    #tattoo-preview.show { display: block; }
-    
-    #stats-bar {
-      position: absolute; bottom: 20px; left: 50%;
-      transform: translateX(-50%);
-      background: rgba(30,30,50,0.95);
-      padding: 12px 24px; border-radius: 12px;
-      z-index: 10; display: flex; gap: 24px;
-      font-size: 0.95em; border: 1px solid rgba(100,100,255,0.3);
-    }
-    #stats-bar span { color: #7c9fff; font-weight: 600; }
-    
-    #modal {
-      display: none; position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%; background: rgba(0,0,0,0.8);
-      z-index: 100; justify-content: center; align-items: center; padding: 20px;
-    }
-    #modal.show { display: flex; }
-    .modal-content {
-      background: #1e1e32; border-radius: 16px; padding: 24px;
-      max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
-      border: 1px solid rgba(100,100,255,0.4);
-    }
-    .modal-content h3 { color: #7c9fff; margin-bottom: 16px; text-align: center; }
-    .modal-content img { width: 100%; border-radius: 12px; margin: 12px 0; background: #252540; }
-    .modal-content p { margin: 8px 0; line-height: 1.5; }
-    .modal-content .copy-btn { margin-top: 16px; background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); }
-    
-    .note { font-size: 0.85em; color: #888; margin-top: 4px; font-style: italic; }
-    .loading { text-align: center; padding: 20px; color: #aaa; font-style: italic; }
-    
-    #preset-locations { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-    .preset-btn {
-      padding: 6px 12px; font-size: 0.85em; background: #374151;
-      border-radius: 6px; border: none; color: #fff; cursor: pointer;
-      transition: background 0.2s;
-    }
-    .preset-btn:hover { background: #4b5563; }
-    
-    .api-key-input { margin-top: 8px; }
-    .api-key-input input {
-      width: 100%; padding: 8px; border-radius: 6px;
-      border: 1px solid #444; background: #252540; color: #fff; font-size: 0.9em;
-    }
-    
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #1a1a2e; }
-    ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #718096; }
-  </style>
-</head>
-<body>
-  <div id="canvas-container"></div>
-  
-  <div id="ui-panel">
-    <h3>👤 Параметры модели</h3>
-    
-    <div class="control-group">
-      <label>Пол</label>
-      <select id="gender">
-        <option value="male">Мужчина</option>
-        <option value="female">Женщина</option>
-      </select>
-    </div>
-    
-    <div class="control-group">
-      <label>Рост: <span id="height-val">1.0</span></label>
-      <input type="range" id="height" min="0.8" max="1.2" step="0.05" value="1.0">
-    </div>
-    
-    <div class="control-group">
-      <label>Вес: <span id="weight-val">1.0</span></label>
-      <input type="range" id="weight" min="0.7" max="1.3" step="0.1" value="1.0">
-    </div>
-    
-    <div class="control-group">
-      <label>Цвет кожи</label>
-      <div class="skin-colors">
-        <div class="skin-color active" style="background:#f5d0b8" data-color="#f5d0b8"></div>
-        <div class="skin-color" style="background:#e8b89a" data-color="#e8b89a"></div>
-        <div class="skin-color" style="background:#c6865c" data-color="#c6865c"></div>
-        <div class="skin-color" style="background:#8d5524" data-color="#8d5524"></div>
-        <div class="skin-color" style="background:#3d2314" data-color="#3d2314"></div>
-      </div>
-    </div>
-    
-    <h3>🖼️ Фото лица</h3>
-    <div class="control-group">
-      <input type="file" id="face-upload" accept="image/*">
-      <p class="note">Фото появится над моделью</p>
-    </div>
-    
-    <h3>🎨 Татуировка</h3>
-    <div class="control-group">
-      <button class="btn" id="gen-tattoo-btn">✨ Сгенерировать тату</button>
-      <div id="tattoo-input">
-        <input type="text" id="tattoo-prompt" placeholder="Например: дракон в стиле ньюскул">
-        <div class="api-key-input">
-          <input type="text" id="api-key" placeholder="API ключ (необязательно)">
-          <p class="note">Без ключа используется демо-режим</p>
+        
+        <label>🖼️ Готовое тату (выбрать):</label>
+        <select id="tattooPreset">
+            <option value="dragon">Дракон (ч/б)</option>
+            <option value="rose">Роза (цветная)</option>
+            <option value="skull">Череп (ч/б)</option>
+            <option value="tribal">Племенное (ч/б)</option>
+        </select>
+        
+        <button id="generateAI">✨ Сгенерировать тату через ИИ (опционально)</button>
+        <button id="applyTattoo">🎯 Нанести тату на выбранную зону</button>
+        <button id="makeScreenshot">📸 Сделать скриншот</button>
+        
+        <div class="result" id="calculation">
+            ⏳ Расчёт появится после нанесения тату
         </div>
-        <button class="btn" id="generate-tattoo">Генерировать</button>
-        <button class="btn secondary" id="use-fallback">🎲 Случайная тату (демо)</button>
-      </div>
-      <img id="tattoo-preview" alt="Preview">
+        <button id="generateTZ" style="background:#2ecc71;">📄 Сформировать ТЗ для мастера</button>
     </div>
-    
-    <div class="control-group">
-      <label>Позиция тату (клик)</label>
-      <div id="preset-locations">
-        <button class="preset-btn" data-pos="right-arm">Правая рука</button>
-        <button class="preset-btn" data-pos="chest">Грудь</button>
-        <button class="preset-btn" data-pos="left-leg">Левая нога</button>
-      </div>
-      <p class="note">Перетащите тату мышкой для точной позиции</p>
-    </div>
-    
-    <h3>💾 Экспорт</h3>
-    <div class="control-group">
-      <button class="btn" id="export-btn">📄 Сформировать ТЗ</button>
-      <button class="btn secondary" id="reset-btn">🔄 Сбросить всё</button>
-    </div>
-  </div>
-  
-  <div id="stats-bar">
-    <div>🎨 Краски: <span id="ink-amount">0</span> мл</div>
-    <div>⏱️ Время: <span id="time-estimate">0</span> ч</div>
-    <div>📐 Площадь: <span id="tattoo-area">0</span> см²</div>
-  </div>
-  
-  <div id="modal">
-    <div class="modal-content">
-      <h3>📋 Техническое задание</h3>
-      <div id="modal-screenshot"></div>
-      <p><strong>Параметры модели:</strong></p>
-      <p id="modal-params"></p>
-      <p><strong>Татуировка:</strong></p>
-      <p id="modal-tattoo"></p>
-      <p><strong>Расчёт:</strong></p>
-      <p id="modal-calc"></p>
-      <button class="btn copy-btn" id="copy-tz">📋 Скопировать текст для мастера</button>
-      <button class="btn secondary" id="close-modal" style="margin-top:10px">✕ Закрыть</button>
-    </div>
-  </div>
+    <div class="status" id="status">✅ Система готова</div>
 
-  <!-- Three.js и дополнения -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-
-  <script>
-    // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
-    let scene, camera, renderer, controls, model;
-    let skinColor = '#f5d0b8';
-    let modelScale = { x: 1, y: 1, z: 1 };
-    let tattoos = [];
-    let currentTattooImage = null;
-    let isDragging = false, selectedTattoo = null;
-    let dragPlane, dragOffset = new THREE.Vector2();
-    let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2();
-    
-    // Демо-татуировки (ссылки на прозрачные PNG)
-    const DEMO_TATTOOS = [
-      'https://cdn-icons-png.flaticon.com/512/3069/3069179.png',
-      'https://cdn-icons-png.flaticon.com/512/2991/2991456.png',
-      'https://cdn-icons-png.flaticon.com/512/3069/3069159.png',
-      'https://cdn-icons-png.flaticon.com/512/2991/2991448.png'
-    ];
-    
-    // Позиции для тату на модели (локальные координаты)
-    const TATTOO_POSITIONS = {
-      'right-arm': { x: 0.6, y: 0.3, z: 0 },
-      'chest': { x: 0, y: 0.5, z: 0.45 },
-      'left-leg': { x: -0.3, y: -0.5, z: 0.2 }
-    };
-
-    // ==================== ИНИЦИАЛИЗАЦИЯ THREE.JS ====================
-    function init() {
-      // Сцена
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x1a1a2e);
-      scene.fog = new THREE.Fog(0x1a1a2e, 10, 25);
-      
-      // Камера
-      camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
-      camera.position.set(0, 1, 4);
-      
-      // Рендерер
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.shadowMap.enabled = true;
-      document.getElementById('canvas-container').appendChild(renderer.domElement);
-      
-      // Контролы
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.minDistance = 2.5;
-      controls.maxDistance = 10;
-      controls.maxPolarAngle = Math.PI * 0.52;
-      
-      // Свет
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-      scene.add(ambientLight);
-      
-      const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      mainLight.position.set(5, 8, 5);
-      mainLight.castShadow = true;
-      mainLight.shadow.mapSize.set(1024, 1024);
-      scene.add(mainLight);
-      
-      const fillLight = new THREE.DirectionalLight(0x7c9fff, 0.4);
-      fillLight.position.set(-5, 2, -3);
-      scene.add(fillLight);
-      
-      // Плоскость-пол
-      const floorGeo = new THREE.PlaneGeometry(20, 20);
-      const floorMat = new THREE.MeshStandardMaterial({ 
-        color: 0x252540, roughness: 0.8, metalness: 0.2 
-      });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      floor.position.y = -1.2;
-      floor.receiveShadow = true;
-      scene.add(floor);
-      
-      // Создаём модель (с фолбэком)
-      createFallbackModel();
-      
-      // Плоскость для лица
-      createFacePlane();
-      
-      // Плоскость для драга
-      dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-      
-      // События
-      setupEventListeners();
-      
-      // Анимация
-      animate();
-    }
-
-    // ==================== СОЗДАНИЕ МОДЕЛИ (фолбэк) ====================
-    function createFallbackModel() {
-      // Удаляем старую модель если есть
-      if (model) scene.remove(model);
-      
-      // Группа для всей модели
-      model = new THREE.Group();
-      model.position.y = -0.5;
-      
-      // Материал кожи
-      skinMaterial = new THREE.MeshStandardMaterial({
-        color: skinColor, roughness: 0.6, metalness: 0.1
-      });
-      
-      // Тело (цилиндр)
-      const bodyGeo = new THREE.CylinderGeometry(0.4, 0.35, 1.2, 16);
-      const body = new THREE.Mesh(bodyGeo, skinMaterial);
-      body.position.y = 0.4;
-      body.castShadow = true;
-      model.add(body);
-      
-      // Голова (сфера)
-      const headGeo = new THREE.SphereGeometry(0.35, 24, 24);
-      const head = new THREE.Mesh(headGeo, skinMaterial);
-      head.position.y = 1.35;
-      head.castShadow = true;
-      head.name = 'head';
-      model.add(head);
-      
-      // Руки
-      const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.9, 8);
-      
-      const rightArm = new THREE.Mesh(armGeo, skinMaterial);
-      rightArm.position.set(0.55, 0.4, 0);
-      rightArm.rotation.z = -0.2;
-      rightArm.castShadow = true;
-      rightArm.name = 'right-arm';
-      model.add(rightArm);
-      
-      const leftArm = new THREE.Mesh(armGeo, skinMaterial);
-      leftArm.position.set(-0.55, 0.4, 0);
-      leftArm.rotation.z = 0.2;
-      leftArm.castShadow = true;
-      leftArm.name = 'left-arm';
-      model.add(leftArm);
-      
-      // Ноги
-      const legGeo = new THREE.CylinderGeometry(0.12, 0.1, 1.1, 12);
-      
-      const rightLeg = new THREE.Mesh(legGeo, skinMaterial);
-      rightLeg.position.set(0.25, -0.75, 0);
-      rightLeg.castShadow = true;
-      rightLeg.name = 'right-leg';
-      model.add(rightLeg);
-      
-      const leftLeg = new THREE.Mesh(legGeo, skinMaterial);
-      leftLeg.position.set(-0.25, -0.75, 0);
-      leftLeg.castShadow = true;
-      leftLeg.name = 'left-leg';
-      model.add(leftLeg);
-      
-      // Применяем текущий пол (визуальные отличия)
-      applyGender();
-      
-      // Применяем масштаб
-      updateModelScale();
-      
-      scene.add(model);
-    }
-
-    function applyGender() {
-      // Простая визуальная разница: ширина плеч
-      const gender = document.getElementById('gender').value;
-      const shoulderWidth = gender === 'male' ? 0.4 : 0.35;
-      
-      model.traverse(child => {
-        if (child.name === 'right-arm') child.position.x = shoulderWidth + 0.15;
-        if (child.name === 'left-arm') child.position.x = -(shoulderWidth + 0.15);
-      });
-    }
-
-    function updateModelScale() {
-      if (!model) return;
-      model.scale.set(modelScale.x, modelScale.y, modelScale.z);
-    }
-
-    // ==================== ПЛОСКОСТЬ ДЛЯ ЛИЦА ====================
-    function createFacePlane() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      
-      // Заглушка по умолчанию
-      ctx.fillStyle = skinColor;
-      ctx.fillRect(0, 0, 256, 256);
-      ctx.fillStyle = '#333';
-      ctx.font = '20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Лицо', 128, 135);
-      
-      const texture = new THREE.CanvasTexture(canvas);
-      const geo = new THREE.PlaneGeometry(0.5, 0.5);
-      const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-      facePlane = new THREE.Mesh(geo, mat);
-      facePlane.position.set(0, 2.2, 0);
-      facePlane.visible = false;
-      scene.add(facePlane);
-    }
-
-    // ==================== СОБЫТИЯ ====================
-    function setupEventListeners() {
-      // Ресайз окна
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-      
-      // Ползунки
-      document.getElementById('height').addEventListener('input', (e) => {
-        modelScale.y = parseFloat(e.target.value);
-        document.getElementById('height-val').textContent = modelScale.y.toFixed(2);
-        updateModelScale();
-      });
-      
-      document.getElementById('weight').addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        modelScale.x = modelScale.z = val;
-        document.getElementById('weight-val').textContent = val.toFixed(2);
-        updateModelScale();
-      });
-      
-      // Пол
-      document.getElementById('gender').addEventListener('change', applyGender);
-      
-      // Цвет кожи
-      document.querySelectorAll('.skin-color').forEach(el => {
-        el.addEventListener('click', function() {
-          document.querySelectorAll('.skin-color').forEach(c => c.classList.remove('active'));
-          this.classList.add('active');
-          skinColor = this.dataset.color;
-          if (skinMaterial) skinMaterial.color.set(skinColor);
-          // Обновить текстуру лица если есть
-          if (facePlane?.material?.map?.image) {
-            facePlane.material.map.needsUpdate = true;
-          }
-        });
-      });
-      
-      // Загрузка фото лица
-      document.getElementById('face-upload').addEventListener('change', handleFaceUpload);
-      
-      // Генерация тату
-      document.getElementById('gen-tattoo-btn').addEventListener('click', () => {
-        document.getElementById('tattoo-input').classList.toggle('show');
-      });
-      
-      document.getElementById('generate-tattoo').addEventListener('click', generateTattoo);
-      document.getElementById('use-fallback').addEventListener('click', useFallbackTattoo);
-      
-      // Позиции тату
-      document.querySelectorAll('.preset-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const pos = this.dataset.pos;
-          placeTattooAtPreset(pos);
-        });
-      });
-      
-      // Мышь для драга тату
-      renderer.domElement.addEventListener('mousemove', onMouseMove);
-      renderer.domElement.addEventListener('mouseup', onMouseUp);
-      renderer.domElement.addEventListener('mousedown', onMouseDown);
-      
-      // Экспорт
-      document.getElementById('export-btn').addEventListener('click', exportTZ);
-      document.getElementById('reset-btn').addEventListener('click', resetAll);
-      
-      // Модалка
-      document.getElementById('close-modal').addEventListener('click', () => {
-        document.getElementById('modal').classList.remove('show');
-      });
-      document.getElementById('copy-tz').addEventListener('click', copyTZText);
-    }
-
-    // ==================== ЗАГРУЗКА ФОТО ЛИЦА ====================
-    function handleFaceUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = 256; canvas.height = 256;
-          
-          // Crop to square
-          const size = Math.min(img.width, img.height);
-          const sx = (img.width - size) / 2;
-          const sy = (img.height - size) / 2;
-          ctx.drawImage(img, sx, sy, size, size, 0, 0, 256, 256);
-          
-          // Apply skin tone overlay for blending
-          ctx.globalCompositeOperation = 'multiply';
-          ctx.fillStyle = skinColor + '40';
-          ctx.fillRect(0, 0, 256, 256);
-          
-          const texture = new THREE.CanvasTexture(canvas);
-          if (facePlane) {
-            facePlane.material.map = texture;
-            facePlane.material.needsUpdate = true;
-            facePlane.visible = true;
-          }
-        };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    // ==================== ГЕНЕРАЦИЯ ТАТУ ====================
-    async function generateTattoo() {
-      const prompt = document.getElementById('tattoo-prompt').value.trim();
-      const apiKey = document.getElementById('api-key').value.trim();
-      
-      if (!prompt) {
-        alert('Введите описание татуировки!');
-        return;
-      }
-      
-      showLoading('Генерация татуировки...');
-      
-      // Попытка 1: DeepAI API
-      try {
-        if (apiKey) {
-          const response = await fetch('https://api.deepai.org/api/text2img', {
-            method: 'POST',
-            headers: {
-              'api-key': apiKey,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text: prompt + ', tattoo design, black and white, transparent background, vector style' })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.output_url) {
-              loadTattooImage(data.output_url);
-              return;
+    <!-- Подключаем Three.js и расширения -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
             }
-          }
         }
-      } catch (e) {
-        console.log('DeepAI failed, trying fallback...', e);
-      }
-      
-      // Попытка 2: Replicate (упрощённо)
-      try {
-        if (apiKey && apiKey.startsWith('r8_')) {
-          // Здесь был бы вызов Replicate API
-          // Для демо используем фолбэк
-        }
-      } catch (e) {
-        console.log('Replicate failed', e);
-      }
-      
-      // Фолбэк: демо-тату
-      hideLoading();
-      useFallbackTattoo();
-    }
+    </script>
 
-    function useFallbackTattoo() {
-      const randomTattoo = DEMO_TATTOOS[Math.floor(Math.random() * DEMO_TATTOOS.length)];
-      loadTattooImage(randomTattoo);
-    }
-
-    function loadTattooImage(url) {
-      const img = document.getElementById('tattoo-preview');
-      img.src = url;
-      img.classList.add('show');
-      
-      // Загружаем как текстуру для Three.js
-      const loader = new THREE.TextureLoader();
-      loader.load(url, (texture) => {
-        texture.transparent = true;
-        currentTattooImage = texture;
-        // Авто-размещение на правой руке
-        placeTattooAtPreset('right-arm');
-      }, undefined, (err) => {
-        console.error('Failed to load tattoo texture:', err);
-        alert('Не удалось загрузить тату. Попробуйте демо-режим.');
-      });
-    }
-
-    function showLoading(text) {
-      const preview = document.getElementById('tattoo-preview');
-      preview.classList.remove('show');
-      preview.alt = text;
-      preview.style.display = 'block';
-      preview.parentElement.querySelector('.loading')?.remove();
-      const loading = document.createElement('div');
-      loading.className = 'loading';
-      loading.textContent = text;
-      preview.parentElement.appendChild(loading);
-    }
-    
-    function hideLoading() {
-      document.querySelector('#tattoo-input .loading')?.remove();
-    }
-
-    // ==================== РАЗМЕЩЕНИЕ ТАТУ ====================
-    function placeTattooAtPreset(presetName) {
-      if (!currentTattooImage || !model) return;
-      
-      const pos = TATTOO_POSITIONS[presetName];
-      if (!pos) return;
-      
-      // Создаём плоскость для тату
-      const geo = new THREE.PlaneGeometry(0.3, 0.3);
-      const mat = new THREE.MeshBasicMaterial({ 
-        map: currentTattooImage, 
-        transparent: true, 
-        side: THREE.DoubleSide,
-        depthTest: false
-      });
-      const tattoo = new THREE.Mesh(geo, mat);
-      
-      // Позиция в мировых координатах
-      const worldPos = model.localToWorld(pos.clone());
-      tattoo.position.copy(worldPos);
-      tattoo.lookAt(camera.position); // Поворот к камере для лучшей видимости
-      
-      // Данные для расчётов
-      tattoo.userData = {
-        area: 25, // см² (условно)
-        isColor: false,
-        originalPos: pos.clone()
-      };
-      
-      // Анализ цвета (упрощённо)
-      analyzeTattooColors(tattoo);
-      
-      scene.add(tattoo);
-      tattoos.push(tattoo);
-      
-      // Обновляем статистику
-      updateStats();
-    }
-
-    function analyzeTattooColors(tattoo) {
-      // Упрощённый анализ: берём центральный пиксель текстуры
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = 64; canvas.height = 64;
-      
-      // Рисуем текстуру на канвас
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = tattoo.material.map.image?.src || DEMO_TATTOOS[0];
-      
-      img.onload = function() {
-        ctx.drawImage(img, 0, 0, 64, 64);
-        const data = ctx.getImageData(32, 32, 1, 1).data;
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         
-        // Определяем, цветное или Ч/Б
-        const isGrayscale = Math.abs(data[0]-data[1]) < 10 && Math.abs(data[1]-data[2]) < 10;
-        tattoo.userData.isColor = !isGrayscale;
-        tattoo.userData.area = Math.round(15 + Math.random() * 20); // 15-35 см²
+        // --- Инициализация сцены ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111122);
+        scene.fog = new THREE.FogExp2(0x111122, 0.008);
         
-        updateStats();
-      };
-    }
-
-    function updateStats() {
-      if (tattoos.length === 0) {
-        document.getElementById('ink-amount').textContent = '0';
-        document.getElementById('time-estimate').textContent = '0';
-        document.getElementById('tattoo-area').textContent = '0';
-        return;
-      }
-      
-      let totalArea = 0, hasColor = false;
-      tattoos.forEach(t => {
-        totalArea += t.userData.area || 20;
-        if (t.userData.isColor) hasColor = true;
-      });
-      
-      // Расчёт: 0.8 мл на см² для цветных, 0.4 для Ч/Б
-      const inkPerCm2 = hasColor ? 0.8 : 0.4;
-      const inkAmount = Math.round(totalArea * inkPerCm2 * 10) / 10;
-      const timeHours = Math.round(totalArea * 1.5 * 10) / 10;
-      
-      document.getElementById('ink-amount').textContent = inkAmount;
-      document.getElementById('time-estimate').textContent = timeHours;
-      document.getElementById('tattoo-area').textContent = totalArea;
-    }
-
-    // ==================== DRAG & DROP ДЛЯ ТАТУ ====================
-    function onMouseDown(event) {
-      event.preventDefault();
-      
-      // Нормализуем координаты мыши
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      
-      raycaster.setFromCamera(mouse, camera);
-      
-      // Проверяем клик по тату
-      const intersects = raycaster.intersectObjects(tattoos);
-      if (intersects.length > 0) {
-        selectedTattoo = intersects[0].object;
-        isDragging = true;
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(2, 1.5, 2.5);
+        camera.lookAt(0, 1, 0);
         
-        // Вычисляем смещение
-        const intersect = raycaster.intersectPlane(dragPlane, new THREE.Ray(camera.position, 
-          new THREE.Vector3().subVectors(intersects[0].point, camera.position).normalize()));
-        if (intersect) {
-          dragOffset.copy(selectedTattoo.position).sub(intersect);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); // preserveDrawingBuffer для скриншотов
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+        
+        // Управление
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.target.set(0, 1, 0);
+        
+        // Освещение
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+        mainLight.position.set(2, 3, 2);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+        const fillLight = new THREE.PointLight(0xccaa88, 0.5);
+        fillLight.position.set(1, 2, 2);
+        scene.add(fillLight);
+        const backLight = new THREE.PointLight(0x88aaff, 0.4);
+        backLight.position.set(0, 1.5, -2);
+        scene.add(backLight);
+        
+        // Пол и фон
+        const gridHelper = new THREE.GridHelper(5, 20, 0x88aaff, 0x335588);
+        gridHelper.position.y = -0.8;
+        scene.add(gridHelper);
+        
+        // --- Переменные для модели ---
+        let currentModel = null;
+        let skinMaterial = null;
+        let tattooSprite = null;      // Простое наложение (спрайт или плоскость)
+        let currentTattooZone = 'arm_right';
+        let tattooColorMode = 'bw';   // ч/б или цвет
+        
+        // Загрузчик GLTF
+        const loader = new GLTFLoader();
+        
+        // Функция загрузки модели по полу
+        function loadModel(gender) {
+            if (currentModel) scene.remove(currentModel);
+            // Используем две разные модели (из публичных ресурсов Three.js)
+            // Мужчина: модель робота? Нет, лучше взять простую человеческую фигуру с открытой лицензией.
+            // Для демонстрации используем разные скин-меши, но проще взять одну и ту же модель с заменой текстур.
+            // Однако для убедительности: мужчина - высокая, женщина - чуть стройнее (масштаб)
+            // Реально: я использую одну качественную модель человека (https://threejs.org/examples/models/gltf/RobotExpressive.glb - это робот, не подходит).
+            // Возьмем модель из репозитория "Human.glb", но чтобы гарантировать работу, используем модель "Boy.glb" из примеров.
+            // Но там нет UV для кожи. Поэтому сделаем проще: создадим примитивную фигуру из геометрий, на которую можно накладывать текстуры и легко менять цвет.
+            // Это обеспечит 100% работоспособность без внешних моделей, которые могут не загрузиться.
+            createProceduralHuman(gender);
         }
-        return;
-      }
-      
-      // Клик по модели для размещения новой тату (если есть изображение)
-      if (currentTattooImage && model) {
-        const intersects = raycaster.intersectObject(model, true);
-        if (intersects.length > 0) {
-          const point = intersects[0].point;
-          placeTattooAtPoint(point);
+        
+        // Создаём процедурного человека из простых мешей (тело, голова, руки, ноги) — полностью управляемый
+        function createProceduralHuman(gender) {
+            if (currentModel) scene.remove(currentModel);
+            const group = new THREE.Group();
+            
+            // Цвет кожи по умолчанию
+            const skinDefault = document.getElementById('skinColor').value;
+            
+            // Материалы
+            const skinMat = new THREE.MeshStandardMaterial({ color: skinDefault, roughness: 0.3, metalness: 0.1 });
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x2c3e4e });
+            const shirtMat = new THREE.MeshStandardMaterial({ color: gender === 'male' ? 0x34495e : 0x9b59b6 });
+            
+            // Туловище
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.35), skinMat);
+            torso.position.set(0, 0.6, 0);
+            torso.castShadow = true;
+            torso.receiveShadow = true;
+            group.add(torso);
+            
+            // Голова
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 32, 32), skinMat);
+            head.position.set(0, 1.1, 0);
+            head.castShadow = true;
+            group.add(head);
+            
+            // Глаза (для жизни)
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const pupilMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 24, 24), eyeMat);
+            leftEye.position.set(-0.12, 1.18, 0.28);
+            group.add(leftEye);
+            const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 24, 24), eyeMat);
+            rightEye.position.set(0.12, 1.18, 0.28);
+            group.add(rightEye);
+            const leftPupil = new THREE.Mesh(new THREE.SphereGeometry(0.04, 24, 24), pupilMat);
+            leftPupil.position.set(-0.12, 1.18, 0.33);
+            group.add(leftPupil);
+            const rightPupil = new THREE.Mesh(new THREE.SphereGeometry(0.04, 24, 24), pupilMat);
+            rightPupil.position.set(0.12, 1.18, 0.33);
+            group.add(rightPupil);
+            
+            // Руки (цилиндры)
+            const armMat = new THREE.MeshStandardMaterial({ color: skinDefault, roughness: 0.4 });
+            const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.65, 8), armMat);
+            leftArm.position.set(-0.45, 0.95, 0);
+            leftArm.rotation.z = 0.3;
+            leftArm.rotation.x = -0.2;
+            group.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.65, 8), armMat);
+            rightArm.position.set(0.45, 0.95, 0);
+            rightArm.rotation.z = -0.3;
+            rightArm.rotation.x = 0.2;
+            group.add(rightArm);
+            
+            // Ноги
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x2c3e4e });
+            const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.7, 8), legMat);
+            leftLeg.position.set(-0.2, 0.25, 0);
+            group.add(leftLeg);
+            const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.7, 8), legMat);
+            rightLeg.position.set(0.2, 0.25, 0);
+            group.add(rightLeg);
+            
+            // Сохраняем ссылки на части для изменения цвета кожи и текстуры лица
+            group.userData = {
+                torso, head, leftArm, rightArm,
+                skinMat: skinMat,
+                armMat: armMat
+            };
+            
+            currentModel = group;
+            scene.add(currentModel);
+            
+            // Применяем текущие настройки веса/роста/цвета
+            updateBodyParams();
         }
-      }
-    }
-
-    function onMouseMove(event) {
-      if (!isDragging || !selectedTattoo) return;
-      
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      
-      raycaster.setFromCamera(mouse, camera);
-      const intersect = raycaster.intersectPlane(dragPlane, 
-        new THREE.Ray(camera.position, new THREE.Vector3(0, 0, -1).transformDirection(camera.matrixWorld)));
-      
-      if (intersect) {
-        selectedTattoo.position.copy(intersect.add(dragOffset));
-        selectedTattoo.lookAt(camera.position);
-      }
-    }
-
-    function onMouseUp() {
-      isDragging = false;
-      selectedTattoo = null;
-    }
-
-    function placeTattooAtPoint(point) {
-      if (!currentTattooImage) return;
-      
-      const geo = new THREE.PlaneGeometry(0.25, 0.25);
-      const mat = new THREE.MeshBasicMaterial({ 
-        map: currentTattooImage, transparent: true, side: THREE.DoubleSide, depthTest: false 
-      });
-      const tattoo = new THREE.Mesh(geo, mat);
-      
-      tattoo.position.copy(point);
-      tattoo.lookAt(camera.position);
-      tattoo.userData = { area: 20, isColor: false };
-      
-      analyzeTattooColors(tattoo);
-      
-      scene.add(tattoo);
-      tattoos.push(tattoo);
-      updateStats();
-    }
-
-    // Удаление тату по клику на крестик (упрощённо: правой кнопкой)
-    renderer.domElement.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      
-      const intersects = raycaster.intersectObjects(tattoos);
-      if (intersects.length > 0) {
-        const tattoo = intersects[0].object;
-        scene.remove(tattoo);
-        tattoos = tattoos.filter(t => t !== tattoo);
-        updateStats();
-      }
-    });
-
-    // ==================== ЭКСПОРТ ТЗ ====================
-    function exportTZ() {
-      // Создаём скриншот
-      renderer.render(scene, camera);
-      const screenshot = renderer.domElement.toDataURL('image/png');
-      
-      // Формируем текст
-      const params = {
-        gender: document.getElementById('gender').value,
-        height: modelScale.y.toFixed(2),
-        weight: modelScale.x.toFixed(2),
-        skinColor: skinColor
-      };
-      
-      const tattooInfo = tattoos.length > 0 
-        ? `Количество: ${tattoos.length}, Площадь: ${document.getElementById('tattoo-area').textContent} см²`
-        : 'Нет татуировок';
-      
-      const calc = `Краски: ${document.getElementById('ink-amount').textContent} мл, Время: ${document.getElementById('time-estimate').textContent} часов`;
-      
-      // Заполняем модалку
-      document.getElementById('modal-screenshot').innerHTML = `<img src="${screenshot}" alt="Screenshot">`;
-      document.getElementById('modal-params').textContent = 
-        `Пол: ${params.gender === 'male' ? 'Мужской' : 'Женский'}, Рост: ${params.height}, Вес: ${params.weight}, Цвет кожи: ${skinColor}`;
-      document.getElementById('modal-tattoo').textContent = tattooInfo;
-      document.getElementById('modal-calc').textContent = calc;
-      
-      // Показываем
-      document.getElementById('modal').classList.add('show');
-      
-      // Сохраняем для копирования
-      window.tzText = `Техническое задание на татуировку:
-Параметры модели:
-- Пол: ${params.gender === 'male' ? 'Мужской' : 'Женский'}
-- Рост: ${params.height}
-- Вес: ${params.weight}  
-- Цвет кожи: ${skinColor}
-
-Татуировка: ${tattooInfo}
-
-Расчёт материалов и времени:
-${calc}
-
-Отправить мастеру для согласования.`;
-    }
-
-    function copyTZText() {
-      if (window.tzText) {
-        navigator.clipboard.writeText(window.tzText).then(() => {
-          const btn = document.getElementById('copy-tz');
-          const original = btn.textContent;
-          btn.textContent = '✓ Скопировано!';
-          setTimeout(() => btn.textContent = original, 2000);
+        
+        // Обновление параметров модели
+        function updateBodyParams() {
+            if (!currentModel) return;
+            const heightVal = parseFloat(document.getElementById('height').value);
+            const weightVal = parseFloat(document.getElementById('weight').value);
+            currentModel.scale.set(weightVal, heightVal, weightVal);
+            
+            const skinColor = document.getElementById('skinColor').value;
+            const data = currentModel.userData;
+            if (data && data.skinMat) {
+                data.skinMat.color.set(skinColor);
+                if (data.armMat) data.armMat.color.set(skinColor);
+            }
+            // Обработка текстуры лица, если загружена
+            if (faceTexture) {
+                applyFaceTexture(faceTexture);
+            }
+        }
+        
+        let faceTexture = null;
+        function applyFaceTexture(texture) {
+            if (!currentModel || !currentModel.userData.head) return;
+            const headMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.3 });
+            currentModel.userData.head.material = headMat;
+        }
+        
+        // Загрузка фото лица
+        document.getElementById('faceUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const img = new Image();
+            img.onload = () => {
+                const texture = new THREE.CanvasTexture(img);
+                texture.needsUpdate = true;
+                faceTexture = texture;
+                applyFaceTexture(texture);
+                document.getElementById('status').innerText = '✅ Лицо загружено на модель';
+            };
+            img.src = URL.createObjectURL(file);
         });
-      }
-    }
-
-    function resetAll() {
-      // Удаляем все тату
-      tattoos.forEach(t => scene.remove(t));
-      tattoos = [];
-      currentTattooImage = null;
-      
-      // Сбрасываем параметры
-      modelScale = { x: 1, y: 1, z: 1 };
-      document.getElementById('height').value = 1.0;
-      document.getElementById('weight').value = 1.0;
-      document.getElementById('height-val').textContent = '1.0';
-      document.getElementById('weight-val').textContent = '1.0';
-      document.getElementById('gender').value = 'male';
-      
-      // Сброс цвета кожи
-      document.querySelectorAll('.skin-color').forEach((c, i) => {
-        c.classList.toggle('active', i === 0);
-      });
-      skinColor = '#f5d0b8';
-      if (skinMaterial) skinMaterial.color.set(skinColor);
-      
-      // Скрываем фото лица
-      if (facePlane) facePlane.visible = false;
-      
-      // Скрываем превью тату
-      document.getElementById('tattoo-preview').classList.remove('show');
-      document.getElementById('tattoo-input').classList.remove('show');
-      
-      // Пересоздаём модель
-      createFallbackModel();
-      
-      // Обновляем статистику
-      updateStats();
-    }
-
-    // ==================== АНИМАЦИЯ ====================
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      
-      // Плавное вращение модели (опционально)
-      if (model && !isDragging) {
-        model.rotation.y += 0.002;
-      }
-      
-      renderer.render(scene, camera);
-    }
-
-    // ==================== ЗАПУСК ====================
-    // Ждём загрузки всех скриптов
-    if (typeof THREE !== 'undefined') {
-      init();
-    } else {
-      // Если Three.js не загрузился
-      document.getElementById('canvas-container').innerHTML = 
-        '<div style="color:#fff;text-align:center;padding:50px;font-size:1.2em">⚠️ Ошибка загрузки Three.js<br><small>Проверьте подключение к интернету</small></div>';
-    }
-    
-    // Обработка ошибок загрузки текстур
-    THREE.TextureLoader.prototype.load = (function(original) {
-      return function(url, onLoad, onProgress, onError) {
-        return original.call(this, url, onLoad, onProgress, function(err) {
-          console.warn('Texture load failed, using placeholder:', url);
-          // Создаём цветную заглушку
-          const canvas = document.createElement('canvas');
-          canvas.width = 128; canvas.height = 128;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#7c9fff';
-          ctx.fillRect(0, 0, 128, 128);
-          ctx.fillStyle = '#fff';
-          ctx.font = '12px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('Tattoo', 64, 70);
-          
-          const texture = new THREE.CanvasTexture(canvas);
-          if (onLoad) onLoad(texture);
+        
+        // --- Тату: создаём плоскую картинку, которая следует за выбранной зоной ---
+        let currentTattooMesh = null;
+        
+        function getZonePosition(zone) {
+            // Позиции относительно центра модели (модель стоит в центре)
+            switch(zone) {
+                case 'arm_right': return { x: 0.65, y: 0.95, z: 0.15 };
+                case 'arm_left': return { x: -0.65, y: 0.95, z: 0.15 };
+                case 'chest': return { x: 0, y: 0.75, z: 0.32 };
+                default: return { x: 0.5, y: 0.9, z: 0.2 };
+            }
+        }
+        
+        async function loadTattooImage(src) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    const texture = new THREE.CanvasTexture(img);
+                    texture.needsUpdate = true;
+                    resolve(texture);
+                };
+                img.onerror = () => resolve(null);
+                img.src = src;
+            });
+        }
+        
+        // Предустановленные тату (локальные DataURI для надёжности)
+        const tattooPresets = {
+            dragon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTM0A1t6AAAAFUlEQVQYV2P8//8/AzAiM2JkYGAAAGKUA+fcC4YzAAAAAElFTkSuQmCC", // заглушка
+            rose: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTM0A1t6AAAAGUlEQVQYV2P8//8/AyNkYWJg+M8ABWAGAF2pA/8M5CtwAAAAAElFTkSuQmCC",
+            skull: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTM0A1t6AAAAGUlEQVQYV2P8//8/AzJhYWBgYICyGBgYAGVQA6U+wV4+AAAAAElFTkSuQmCC",
+            tribal: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMTM0A1t6AAAAGUlEQVQYV2P8//8/AyNjYGD4zwAFYAYAWykD/zlojCQAAAAASUVORK5CYII="
+        };
+        
+        async function applyTattoo() {
+            const zone = currentTattooZone;
+            const preset = document.getElementById('tattooPreset').value;
+            let imageUrl = tattooPresets[preset];
+            // Если хотим реальную картинку из сети, можно подставить, но для надёжности используем пресеты.
+            // Для красоты заменим на реальные изображения с прозрачностью (ссылки на png с сервера, но лучше dataURI).
+            // Я добавлю реальные маленькие картинки для демонстрации, используя внешний ресурс (надёжный).
+            if (preset === 'dragon') imageUrl = 'https://cdn.pixabay.com/photo/2021/08/25/17/39/dragon-6573676_1280.png'; // не прозрачный, но пример
+            if (preset === 'rose') imageUrl = 'https://cdn.pixabay.com/photo/2018/01/14/18/19/rose-3082588_1280.png';
+            // Используем рабочие ссылки, но они могут быть большими. В реальном коде лучше локальные.
+            // Для гарантии я использую canvas рисование текста (простое тату).
+            // Создадим canvas тату динамически.
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = preset === 'rose' ? '#ff69b4' : '#000000';
+            ctx.font = 'Bold 40px "Segoe UI"';
+            ctx.fillText(preset === 'dragon' ? '🐉' : (preset === 'rose' ? '🌹' : (preset === 'skull' ? '💀' : '🌀')), 80, 140);
+            ctx.fillStyle = '#aaa';
+            ctx.font = '20px sans-serif';
+            ctx.fillText('tattoo', 80, 200);
+            const texture = new THREE.CanvasTexture(canvas);
+            
+            // Удалить старое тату
+            if (currentTattooMesh) currentModel.remove(currentTattooMesh);
+            
+            const pos = getZonePosition(zone);
+            const planeMat = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, transparent: true });
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.35), planeMat);
+            plane.position.set(pos.x, pos.y, pos.z);
+            plane.lookAt(0, pos.y, 0);
+            plane.castShadow = false;
+            currentModel.add(plane);
+            currentTattooMesh = plane;
+            
+            // Определяем цветность (просто по пресету)
+            tattooColorMode = (preset === 'rose') ? 'color' : 'bw';
+            calculateTattooResources();
+            document.getElementById('status').innerText = `✅ Тату нанесено на ${zone === 'arm_right' ? 'правую руку' : zone === 'arm_left' ? 'левую руку' : 'грудь'}`;
+        }
+        
+        function calculateTattooResources() {
+            // Площадь условно: 30-100 кв.см
+            const area = 45 + Math.floor(Math.random() * 40);
+            const inkPerCm = tattooColorMode === 'color' ? 0.12 : 0.08;
+            const inkMl = (area * inkPerCm).toFixed(1);
+            let hours = (area / 25).toFixed(1);
+            if (tattooColorMode === 'color') hours = (parseFloat(hours) * 1.3).toFixed(1);
+            document.getElementById('calculation').innerHTML = `
+                📐 Площадь: ~${area} см²<br>
+                💧 Краски: ${inkMl} мл (${tattooColorMode === 'color' ? 'цветная' : 'ч/б'})<br>
+                ⏱️ Время: ${hours} часов
+            `;
+        }
+        
+        document.getElementById('applyTattoo').addEventListener('click', applyTattoo);
+        
+        // Выбор зоны
+        document.querySelectorAll('[data-zone]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentTattooZone = btn.getAttribute('data-zone');
+                document.querySelectorAll('[data-zone]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('status').innerText = `📍 Выбрана зона: ${btn.innerText}`;
+            });
         });
-      };
-    })(THREE.TextureLoader.prototype.load);
-  </script>
+        // Активировать первую зону
+        document.querySelector('[data-zone="arm_right"]').classList.add('active');
+        
+        // Генерация через ИИ (имитация запроса, т.к. нужен ключ)
+        document.getElementById('generateAI').addEventListener('click', async () => {
+            document.getElementById('status').innerText = '🤖 Генерация тату через ИИ... (имитация)';
+            // В реальности здесь был бы fetch к Replicate/DeepAI, но без ключа не работает.
+            // Создаём случайное тату на канвасе
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0,0,256,256);
+            ctx.fillStyle = 'black';
+            ctx.font = '20px monospace';
+            ctx.fillText('AI tattoo', 60, 130);
+            const texture = new THREE.CanvasTexture(canvas);
+            if (currentTattooMesh) currentModel.remove(currentTattooMesh);
+            const pos = getZonePosition(currentTattooZone);
+            const planeMat = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, transparent: true });
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.35), planeMat);
+            plane.position.set(pos.x, pos.y, pos.z);
+            plane.lookAt(0, pos.y, 0);
+            currentModel.add(plane);
+            currentTattooMesh = plane;
+            tattooColorMode = 'bw';
+            calculateTattooResources();
+            document.getElementById('status').innerText = '✨ Сгенерировано уникальное тату (демо)';
+        });
+        
+        // Скриншот
+        document.getElementById('makeScreenshot').addEventListener('click', () => {
+            renderer.render(scene, camera);
+            const canvas = renderer.domElement;
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = 'tattoo_model.png';
+            link.click();
+            document.getElementById('status').innerText = '📸 Скриншот сохранён';
+        });
+        
+        // ТЗ
+        document.getElementById('generateTZ').addEventListener('click', () => {
+            const calcText = document.getElementById('calculation').innerHTML;
+            const zoneName = document.querySelector('[data-zone].active')?.innerText || 'правая рука';
+            const tz = `
+=== ТЕХНИЧЕСКОЕ ЗАДАНИЕ ДЛЯ МАСТЕРА ===
+Клиент: 3D примерка
+Локация тату: ${zoneName}
+${calcText.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, '')}
+Стиль: по эскизу
+Дополнительно: требуется консультация.
+            `;
+            navigator.clipboard.writeText(tz).then(() => {
+                alert('ТЗ скопировано в буфер обмена!\n\n' + tz);
+            }).catch(() => alert('Не удалось скопировать, но вот ТЗ:\n' + tz));
+        });
+        
+        // Слушатели ползунков
+        document.getElementById('height').addEventListener('input', updateBodyParams);
+        document.getElementById('weight').addEventListener('input', updateBodyParams);
+        document.getElementById('skinColor').addEventListener('input', updateBodyParams);
+        document.getElementById('gender').addEventListener('change', (e) => {
+            createProceduralHuman(e.target.value);
+            updateBodyParams();
+            if (faceTexture) applyFaceTexture(faceTexture);
+        });
+        
+        // Инициализация
+        createProceduralHuman('male');
+        
+        // Анимация
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // обновление орбиты
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // Адаптация под размер окна
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Стартовый статус
+        setTimeout(() => {
+            document.getElementById('status').innerText = '🎮 Управление: мышь вращает камеру. Ползунки меняют тело.';
+        }, 1000);
+    </script>
 </body>
 </html>
