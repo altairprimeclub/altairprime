@@ -1,755 +1,586 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>3D Tattoo Studio — Исправлено</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0f0f1e 0%, #1a1a3e 100%);
-      color: #fff; overflow: hidden; height: 100vh;
-    }
-    #canvas-container {
-      position: absolute; top: 0; left: 0;
-      width: 100%; height: 100%; z-index: 1;
-    }
-    #debug-panel {
-      position: absolute; top: 10px; left: 10px;
-      background: rgba(255,100,100,0.9); color: #000;
-      padding: 10px 15px; border-radius: 8px; z-index: 100;
-      font-size: 13px; max-width: 400px; display: none;
-      border: 2px solid #ff4444;
-    }
-    #debug-panel.show { display: block; }
-    #debug-panel.success { background: rgba(100,255,150,0.9); border-color: #44ff88; }
-    
-    #ui-panel {
-      position: absolute; right: 15px; top: 15px;
-      width: 300px; background: rgba(25,25,45,0.95);
-      border-radius: 12px; padding: 15px; z-index: 10;
-      max-height: 95vh; overflow-y: auto;
-      border: 1px solid rgba(120,150,255,0.4);
-    }
-    #ui-panel h3 {
-      margin: 12px 0 8px; color: #8ab4ff;
-      font-size: 1em; border-bottom: 1px solid rgba(120,150,255,0.3);
-      padding-bottom: 6px;
-    }
-    .control-group { margin-bottom: 12px; }
-    .control-group label {
-      display: block; margin-bottom: 4px;
-      font-size: 0.9em; color: #ccc;
-    }
-    .control-group input[type="range"] {
-      width: 100%; margin: 4px 0;
-    }
-    .control-group select,
-    .control-group input[type="file"] {
-      width: 100%; padding: 6px 10px;
-      border-radius: 6px; border: 1px solid #444;
-      background: #2a2a4a; color: #fff; font-size: 0.9em;
-    }
-    .btn {
-      width: 100%; padding: 10px; margin: 6px 0;
-      border: none; border-radius: 8px;
-      background: linear-gradient(135deg, #5a67d8, #7c3aed);
-      color: white; font-weight: 600; cursor: pointer;
-      font-size: 0.95em;
-    }
-    .btn:hover { filter: brightness(1.1); }
-    .btn.secondary { background: linear-gradient(135deg, #4a5568, #2d3748); }
-    
-    .skin-colors { display: flex; gap: 6px; flex-wrap: wrap; }
-    .skin-color {
-      width: 32px; height: 32px; border-radius: 50%;
-      cursor: pointer; border: 2px solid transparent;
-    }
-    .skin-color.active { border-color: #fff; box-shadow: 0 0 0 2px #7c3aed; }
-    
-    #stats-bar {
-      position: absolute; bottom: 15px; left: 50%;
-      transform: translateX(-50%);
-      background: rgba(25,25,45,0.95);
-      padding: 10px 20px; border-radius: 10px;
-      z-index: 10; display: flex; gap: 20px;
-      font-size: 0.9em; border: 1px solid rgba(120,150,255,0.4);
-    }
-    #stats-bar span { color: #8ab4ff; font-weight: 600; }
-    
-    #modal {
-      display: none; position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%; background: rgba(0,0,0,0.85);
-      z-index: 100; justify-content: center; align-items: center; padding: 20px;
-    }
-    #modal.show { display: flex; }
-    .modal-content {
-      background: #1e1e3a; border-radius: 14px; padding: 20px;
-      max-width: 550px; width: 100%; max-height: 90vh; overflow-y: auto;
-      border: 1px solid rgba(120,150,255,0.5);
-    }
-    .modal-content h3 { color: #8ab4ff; margin-bottom: 14px; text-align: center; }
-    .modal-content img { width: 100%; border-radius: 10px; margin: 10px 0; background: #2a2a4a; }
-    .modal-content p { margin: 6px 0; line-height: 1.4; font-size: 0.95em; }
-    .copy-btn { background: linear-gradient(135deg, #38b2ac, #319795); margin-top: 14px; }
-    
-    .preset-btn {
-      padding: 5px 10px; font-size: 0.85em; background: #374151;
-      border-radius: 5px; border: none; color: #fff; cursor: pointer;
-      margin: 2px;
-    }
-    .preset-btn:hover { background: #4b5563; }
-    
-    #tattoo-preview {
-      margin-top: 8px; max-width: 100%;
-      border-radius: 6px; display: none; background: #2a2a4a;
-    }
-    #tattoo-preview.show { display: block; }
-    #tattoo-input { display: none; margin-top: 8px; }
-    #tattoo-input.show { display: block; }
-    
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: #0f0f1e; }
-    ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 3px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Альтстудия — продажа долей в квартирах</title>
+    <!-- Яндекс.Карты API (замените YOUR_API_KEY на реальный ключ) -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_YANDEX_MAPS_API_KEY&lang=ru_RU" type="text/javascript"></script>
+    <!-- Google Fonts (шрифты) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        header {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .logo p {
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: #1e293b;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: #2a5298;
+        }
+        .btn-outline {
+            border: 1px solid #2a5298;
+            padding: 8px 20px;
+            border-radius: 40px;
+            background: transparent;
+            color: #2a5298;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-outline:hover {
+            background: #2a5298;
+            color: white;
+        }
+        .btn-primary {
+            background: #2a5298;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover {
+            background: #1e3c72;
+        }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, #eef2ff, #ffffff);
+            padding: 60px 0;
+            text-align: center;
+        }
+        .hero h2 {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+        .hero p {
+            font-size: 1.2rem;
+            color: #334155;
+            max-width: 700px;
+            margin: 0 auto 32px;
+        }
+
+        /* Карта */
+        .map-section {
+            padding: 48px 0;
+            background: white;
+        }
+        #map {
+            width: 100%;
+            height: 450px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
+        }
+
+        /* Карточки объектов */
+        .objects-section {
+            padding: 48px 0;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 28px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .card-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #cbd5e1;
+        }
+        .card-content {
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .card-address {
+            color: #475569;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+        .card-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2a5298;
+            margin-bottom: 12px;
+        }
+        .card-details {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            color: #334155;
+        }
+        .card-tag {
+            background: #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Блок закона */
+        .law-section {
+            background: #f1f5f9;
+            padding: 48px 0;
+        }
+        .law-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+        .law-card {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .law-card h3 {
+            margin-bottom: 12px;
+            color: #1e3c72;
+        }
+
+        /* Калькуляторы */
+        .calculators {
+            padding: 48px 0;
+            background: white;
+        }
+        .calc-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            justify-content: space-between;
+        }
+        .calc-box {
+            flex: 1;
+            min-width: 280px;
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .calc-box h3 {
+            margin-bottom: 16px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+        }
+        .result {
+            font-weight: 700;
+            font-size: 1.3rem;
+            margin-top: 16px;
+            color: #2a5298;
+        }
+
+        /* Форма */
+        .form-section {
+            background: #eef2ff;
+            padding: 48px 0;
+            text-align: center;
+        }
+        .form-group {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        footer {
+            background: #0f172a;
+            color: #cbd5e1;
+            padding: 32px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .header-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .hero h2 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="debug-panel">⏳ Загрузка 3D...</div>
-  <div id="canvas-container"></div>
-  
-  <div id="ui-panel">
-    <h3>👤 Модель</h3>
-    <div class="control-group">
-      <label>Пол</label>
-      <select id="gender">
-        <option value="male">Мужчина</option>
-        <option value="female">Женщина</option>
-      </select>
-    </div>
-    <div class="control-group">
-      <label>Рост: <span id="height-val">1.0</span></label>
-      <input type="range" id="height" min="0.8" max="1.2" step="0.05" value="1.0">
-    </div>
-    <div class="control-group">
-      <label>Вес: <span id="weight-val">1.0</span></label>
-      <input type="range" id="weight" min="0.7" max="1.3" step="0.1" value="1.0">
-    </div>
-    <div class="control-group">
-      <label>Цвет кожи</label>
-      <div class="skin-colors">
-        <div class="skin-color active" style="background:#f5d0b8" data-color="#f5d0b8"></div>
-        <div class="skin-color" style="background:#e0b090" data-color="#e0b090"></div>
-        <div class="skin-color" style="background:#b8855c" data-color="#b8855c"></div>
-        <div class="skin-color" style="background:#7a5230" data-color="#7a5230"></div>
-        <div class="skin-color" style="background:#3d2817" data-color="#3d2817"></div>
-      </div>
-    </div>
-    
-    <h3>🖼️ Лицо</h3>
-    <div class="control-group">
-      <input type="file" id="face-upload" accept="image/*">
-    </div>
-    
-    <h3>🎨 Тату</h3>
-    <div class="control-group">
-      <button class="btn" id="gen-tattoo-btn">✨ Тату</button>
-      <div id="tattoo-input">
-        <input type="text" id="tattoo-prompt" placeholder="Описание..." style="width:100%;padding:6px;margin:4px 0;border-radius:4px;border:1px solid #444;background:#2a2a4a;color:#fff;">
-        <button class="btn" id="generate-tattoo">Генерировать</button>
-        <button class="btn secondary" id="use-fallback">🎲 Демо-тату</button>
-      </div>
-      <img id="tattoo-preview" alt="">
-    </div>
-    <div class="control-group">
-      <label>Позиция:</label>
-      <div style="display:flex;flex-wrap:wrap;">
-        <button class="preset-btn" data-pos="right-arm">Рука</button>
-        <button class="preset-btn" data-pos="chest">Грудь</button>
-        <button class="preset-btn" data-pos="leg">Нога</button>
-      </div>
-    </div>
-    
-    <h3>💾 Экспорт</h3>
-    <button class="btn" id="export-btn">📄 ТЗ</button>
-    <button class="btn secondary" id="reset-btn">🔄 Сброс</button>
-  </div>
-  
-  <div id="stats-bar">
-    <div>🎨 Краски: <span id="ink-amount">0</span> мл</div>
-    <div>⏱️ Время: <span id="time-estimate">0</span> ч</div>
-  </div>
-  
-  <div id="modal">
-    <div class="modal-content">
-      <h3>📋 Техзадание</h3>
-      <div id="modal-screenshot"></div>
-      <p id="modal-params"></p>
-      <p id="modal-tattoo"></p>
-      <p id="modal-calc"></p>
-      <button class="btn copy-btn" id="copy-tz">📋 Копировать</button>
-      <button class="btn secondary" id="close-modal" style="margin-top:8px">✕ Закрыть</button>
-    </div>
-  </div>
+    <header>
+        <div class="container header-inner">
+            <div class="logo">
+                <h1>Альтстудия</h1>
+                <p>Доли в квартирах с юридической гарантией</p>
+            </div>
+            <div class="nav-links">
+                <a href="#map">Карта</a>
+                <a href="#objects">Объекты</a>
+                <a href="#law">Закон</a>
+                <a href="#calc">Калькуляторы</a>
+                <button class="btn-outline" id="callbackBtn">Консультация</button>
+            </div>
+        </div>
+    </header>
 
-  <!-- Three.js с фолбэком на локальный запуск -->
-  <script>
-    // Проверяем WebGL сразу
-    function checkWebGL() {
-      try {
-        const canvas = document.createElement('canvas');
-        return !!(window.WebGLRenderingContext && 
-          (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-      } catch(e) { return false; }
-    }
-    
-    if (!checkWebGL()) {
-      document.getElementById('debug-panel').className = 'show';
-      document.getElementById('debug-panel').innerHTML = 
-        '❌ WebGL не поддерживается!<br>Попробуйте другой браузер или обновите драйверы видеокарты.';
-    }
-  </script>
-  
-  <!-- Загружаем Three.js с обработкой ошибок -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" 
-          onerror="handleScriptError('three.min.js')"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"
-          onerror="handleScriptError('OrbitControls.js')"></script>
-  
-  <script>
-    // Обработчик ошибок загрузки скриптов
-    function handleScriptError(name) {
-      const panel = document.getElementById('debug-panel');
-      panel.className = 'show';
-      panel.innerHTML = `❌ Не загружен: ${name}<br>Проверьте интернет или скачайте Three.js локально.`;
-      panel.style.background = 'rgba(255,150,100,0.95)';
-    }
-    
-    // Глобальные переменные
-    let scene, camera, renderer, controls, model, skinMaterial, facePlane;
-    let skinColor = '#f5d0b8';
-    let modelScale = {x:1, y:1, z:1};
-    let tattoos = [], currentTattooImage = null;
-    let isDragging = false, selectedTattoo = null;
-    let dragPlane, dragOffset = new THREE.Vector2();
-    let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2();
-    
-    const DEMO_TATTOOS = [
-      'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="50" fill="none" stroke="%23fff" stroke-width="4"/><path d="M40 80 Q64 50 88 80" fill="none" stroke="%23fff" stroke-width="3"/><circle cx="52" cy="55" r="5" fill="%23fff"/><circle cx="76" cy="55" r="5" fill="%23fff"/></svg>`),
-      'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><path d="M64 20 L90 60 L75 110 L53 110 L38 60 Z" fill="none" stroke="%23fff" stroke-width="3"/><circle cx="64" cy="70" r="15" fill="none" stroke="%23ff6b6b" stroke-width="2"/></svg>`),
-      'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><path d="M30 90 Q64 40 98 90 Q80 110 64 105 Q48 110 30 90" fill="none" stroke="%23fff" stroke-width="4"/><circle cx="64" cy="75" r="8" fill="%23ffd93d"/></svg>`),
-      'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><text x="50%" y="55%" font-size="40" text-anchor="middle" fill="%23fff">★</text><text x="50%" y="85%" font-size="20" text-anchor="middle" fill="%238ab4ff">ink</text></svg>`)
-    ];
-    
-    const TATTOO_POSITIONS = {
-      'right-arm': {x:0.7, y:0.4, z:0},
-      'chest': {x:0, y:0.6, z:0.5},
-      'leg': {x:-0.35, y:-0.6, z:0.25}
-    };
+    <section class="hero">
+        <div class="container">
+            <h2>Купите долю в квартире<br>как полноценное жильё</h2>
+            <p>Реальная комната со своими стенами. Соглашение о порядке пользования — ваши права на 100%.</p>
+            <button class="btn-primary" id="heroBtn">Смотреть объекты</button>
+        </div>
+    </section>
 
-    // ===== ИНИЦИАЛИЗАЦИЯ =====
-    function init() {
-      const debug = document.getElementById('debug-panel');
-      
-      try {
-        // Сцена
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0f0f1e);
-        scene.fog = new THREE.Fog(0x0f0f1e, 8, 20);
-        
-        // Камера - ПРАВИЛЬНАЯ позиция!
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0.5, 5); // Дальше и выше
-        camera.lookAt(0, 0.5, 0);
-        
-        // Рендерер
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
-        
-        // Контролы
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.minDistance = 3;
-        controls.maxDistance = 12;
-        controls.maxPolarAngle = Math.PI * 0.52;
-        controls.target.set(0, 0.5, 0);
-        
-        // ===== СВЕТ - ЯРЧЕ! =====
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1);
-        mainLight.position.set(8, 10, 6);
-        mainLight.castShadow = true;
-        scene.add(mainLight);
-        
-        const fillLight = new THREE.DirectionalLight(0x8ab4ff, 0.6);
-        fillLight.position.set(-6, 4, -4);
-        scene.add(fillLight);
-        
-        const backLight = new THREE.DirectionalLight(0xffaa88, 0.3);
-        backLight.position.set(0, 2, -8);
-        scene.add(backLight);
-        
-        // Пол
-        const floor = new THREE.Mesh(
-          new THREE.PlaneGeometry(30, 30),
-          new THREE.MeshStandardMaterial({color:0x1a1a3a, roughness:0.9})
-        );
-        floor.rotation.x = -Math.PI/2;
-        floor.position.y = -1.5;
-        floor.receiveShadow = true;
-        scene.add(floor);
-        
-        // Сетка для ориентира
-        const grid = new THREE.GridHelper(20, 20, 0x444466, 0x222233);
-        grid.position.y = -1.49;
-        scene.add(grid);
-        
-        // Создаём модель
-        createModel();
-        
-        // Плоскость для лица
-        createFacePlane();
-        
-        // Плоскость для драга
-        dragPlane = new THREE.Plane(new THREE.Vector3(0,0,1), 0);
-        
-        // События
-        setupEvents();
-        
-        // Успех!
-        debug.className = 'show success';
-        debug.innerHTML = '✅ 3D модель загружена! Вращайте мышкой.';
-        setTimeout(() => debug.style.display = 'none', 4000);
-        
-        // Запускаем анимацию
-        animate();
-        
-      } catch(e) {
-        debug.className = 'show';
-        debug.innerHTML = `❌ Ошибка: ${e.message}<br><small>Смотрите консоль (F12)</small>`;
-        console.error('Init error:', e);
-      }
-    }
+    <!-- Карта -->
+    <section class="map-section" id="map">
+        <div class="container">
+            <h2 class="section-title">Наши объекты на карте</h2>
+            <div id="map"></div>
+            <p class="note" style="text-align:center; margin-top:12px;">* Кликните по метке для просмотра краткой информации</p>
+        </div>
+    </section>
 
-    // ===== СОЗДАНИЕ МОДЕЛИ =====
-    function createModel() {
-      if (model) scene.remove(model);
-      
-      model = new THREE.Group();
-      model.position.y = -0.3; // Чуть выше
-      
-      // Материал кожи
-      skinMaterial = new THREE.MeshStandardMaterial({
-        color: skinColor, roughness: 0.5, metalness: 0.15
-      });
-      
-      // === ТЕЛО ===
-      const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.45, 0.4, 1.4, 20),
-        skinMaterial
-      );
-      body.position.y = 0.7;
-      body.castShadow = true;
-      model.add(body);
-      
-      // === ГОЛОВА ===
-      const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.42, 28, 28),
-        skinMaterial
-      );
-      head.position.y = 1.85;
-      head.castShadow = true;
-      head.name = 'head';
-      model.add(head);
-      
-      // === РУКИ ===
-      const armGeo = new THREE.CylinderGeometry(0.09, 0.09, 1.0, 12);
-      
-      const rightArm = new THREE.Mesh(armGeo, skinMaterial);
-      rightArm.position.set(0.72, 0.65, 0);
-      rightArm.rotation.z = -0.15;
-      rightArm.castShadow = true;
-      rightArm.name = 'right-arm';
-      model.add(rightArm);
-      
-      const leftArm = new THREE.Mesh(armGeo, skinMaterial);
-      leftArm.position.set(-0.72, 0.65, 0);
-      leftArm.rotation.z = 0.15;
-      leftArm.castShadow = true;
-      leftArm.name = 'left-arm';
-      model.add(leftArm);
-      
-      // === НОГИ ===
-      const legGeo = new THREE.CylinderGeometry(0.14, 0.11, 1.3, 16);
-      
-      const rightLeg = new THREE.Mesh(legGeo, skinMaterial);
-      rightLeg.position.set(0.28, -0.65, 0);
-      rightLeg.castShadow = true;
-      model.add(rightLeg);
-      
-      const leftLeg = new THREE.Mesh(legGeo, skinMaterial);
-      leftLeg.position.set(-0.28, -0.65, 0);
-      leftLeg.castShadow = true;
-      model.add(leftLeg);
-      
-      // === ПРИЗЕМЛЕНИЕ ===
-      const feetGeo = new THREE.SphereGeometry(0.16, 12, 12);
-      const feetMat = new THREE.MeshStandardMaterial({color:0x2a2a4a});
-      ['right-leg','left-leg'].forEach((name,i) => {
-        const foot = new THREE.Mesh(feetGeo, feetMat);
-        foot.position.set(i===0?0.28:-0.28, -1.35, 0);
-        foot.scale.y = 0.6;
-        model.add(foot);
-      });
-      
-      applyGender();
-      updateModelScale();
-      scene.add(model);
-    }
-    
-    function applyGender() {
-      const gender = document.getElementById('gender').value;
-      const width = gender === 'male' ? 0.75 : 0.68;
-      model.children.forEach(c => {
-        if (c.name === 'right-arm') c.position.x = width;
-        if (c.name === 'left-arm') c.position.x = -width;
-      });
-    }
-    
-    function updateModelScale() {
-      if (!model) return;
-      model.scale.set(modelScale.x, modelScale.y, modelScale.z);
-    }
-    
-    // ===== ПЛОСКОСТЬ ДЛЯ ЛИЦА =====
-    function createFacePlane() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      
-      ctx.fillStyle = skinColor;
-      ctx.fillRect(0,0,256,256);
-      ctx.fillStyle = '#1a1a3a';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('ФОТО', 128, 120);
-      ctx.font = '14px sans-serif';
-      ctx.fillText('лица', 128, 142);
-      
-      const texture = new THREE.CanvasTexture(canvas);
-      facePlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.6, 0.6),
-        new THREE.MeshBasicMaterial({map:texture, transparent:true})
-      );
-      facePlane.position.set(0, 2.6, 0);
-      facePlane.visible = false;
-      scene.add(facePlane);
-    }
-    
-    // ===== СОБЫТИЯ =====
-    function setupEvents() {
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-      
-      // Ползунки
-      document.getElementById('height').oninput = e => {
-        modelScale.y = +e.target.value;
-        document.getElementById('height-val').textContent = modelScale.y.toFixed(2);
-        updateModelScale();
-      };
-      document.getElementById('weight').oninput = e => {
-        const v = +e.target.value;
-        modelScale.x = modelScale.z = v;
-        document.getElementById('weight-val').textContent = v.toFixed(2);
-        updateModelScale();
-      };
-      document.getElementById('gender').onchange = applyGender;
-      
-      // Цвет кожи
-      document.querySelectorAll('.skin-color').forEach(el => {
-        el.onclick = function() {
-          document.querySelectorAll('.skin-color').forEach(c=>c.classList.remove('active'));
-          this.classList.add('active');
-          skinColor = this.dataset.color;
-          if (skinMaterial) skinMaterial.color.set(skinColor);
+    <!-- Карточки объектов -->
+    <section class="objects-section" id="objects">
+        <div class="container">
+            <h2 class="section-title">Горячие предложения</h2>
+            <div class="cards-grid" id="cardsContainer">
+                <!-- Динамически загружаются из JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Блок о законе -->
+    <section class="law-section" id="law">
+        <div class="container">
+            <h2 class="section-title">Что говорит закон о долевой собственности</h2>
+            <div class="law-grid">
+                <div class="law-card">
+                    <h3>📖 Статья 244 ГК РФ</h3>
+                    <p>Имущество, находящееся в собственности двух или более лиц, принадлежит им на праве общей собственности. Доля — это не абстракция, а законное право на реальную комнату.</p>
+                </div>
+                <div class="law-card">
+                    <h3>⚖️ Статья 247 ГК РФ</h3>
+                    <p>Владение и пользование общим имуществом осуществляется по соглашению. <strong>У нас есть Соглашение о порядке пользования</strong> — оно защищает ваши права на 100%.</p>
+                </div>
+                <div class="law-card">
+                    <h3>💰 Статья 248 ГК РФ</h3>
+                    <p>Доходы от использования имущества (например, аренда) распределяются соразмерно долям. Вы спокойно сдаёте свою комнату и получаете полный доход.</p>
+                </div>
+                <div class="law-card">
+                    <h3>🔑 Статья 250 ГК РФ</h3>
+                    <p>Преимущественное право покупки: соседи обязаны предложить долю вам. Срок — 1 месяц. Если откажутся — продаёте кому угодно.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Калькуляторы -->
+    <section class="calculators" id="calc">
+        <div class="container">
+            <h2 class="section-title">Рассчитайте выгоду</h2>
+            <div class="calc-row">
+                <!-- Калькулятор ремонта -->
+                <div class="calc-box">
+                    <h3>🛠️ Ремонт под ключ</h3>
+                    <label>Площадь квартиры (м²):</label>
+                    <input type="number" id="areaInput" placeholder="Например, 12.1" step="any" value="12.1">
+                    <div>Стоимость 1 м² — 45 000 ₽</div>
+                    <div id="repairResult" class="result"></div>
+                    <button class="btn-primary" id="calcRepairBtn">Рассчитать ремонт</button>
+                </div>
+                <!-- Инвестиционный прогноз (упрощённый) -->
+                <div class="calc-box">
+                    <h3>📈 Инвестиционный прогноз (5 лет)</h3>
+                    <label>Цена доли (₽):</label>
+                    <input type="number" id="priceInput" value="5000000">
+                    <label>Текущая аренда в месяц (₽):</label>
+                    <input type="number" id="rentInput" value="45000">
+                    <label>Ежегодный рост аренды (%):</label>
+                    <input type="number" id="rentGrowth" value="7.5">
+                    <label>Ежегодный рост цены доли (%):</label>
+                    <input type="number" id="priceGrowth" value="15">
+                    <button class="btn-primary" id="calcInvestBtn">Показать доходность</button>
+                    <div id="investResult" class="result"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Форма записи -->
+    <section class="form-section" id="contact">
+        <div class="container">
+            <h2>Хотите посмотреть долю?</h2>
+            <p>Оставьте телефон, мы подберём удобное время для просмотра</p>
+            <div class="form-group">
+                <input type="text" placeholder="Ваше имя" id="userName">
+                <input type="tel" placeholder="Номер телефона" id="userPhone">
+                <button class="btn-primary" id="submitFormBtn">Записаться</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>© 2025 Альтстудия — продажа долей в квартирах с юридическим сопровождением</p>
+            <p>г. Москва, ул. Каланчевская, д. 15А | +7 (495) 000-00-00 | info@altstudio.ru</p>
+        </div>
+    </footer>
+
+    <script>
+        // ------------------- ДАННЫЕ ОБЪЕКТОВ -------------------
+        const properties = [
+            {
+                id: 1,
+                title: "Доля 1/3 в 2-к. квартире",
+                address: "Москва, ул. Ленина, 10",
+                price: 1250000,
+                area: 18.5,
+                floor: 3,
+                rooms: 2,
+                image: "https://via.placeholder.com/400x200?text=Фото+доли",
+                coords: [55.751244, 37.618423],
+                type: "share"
+            },
+            {
+                id: 2,
+                title: "Отдельная комната (доля 1/2)",
+                address: "Москва, пр-т Мира, 45",
+                price: 2100000,
+                area: 22,
+                floor: 5,
+                rooms: 2,
+                image: "https://via.placeholder.com/400x200?text=Фото+комнаты",
+                coords: [55.785, 37.633],
+                type: "share"
+            },
+            {
+                id: 3,
+                title: "Доля 1/4 в 3-к. квартире",
+                address: "Москва, ул. Тверская, 12",
+                price: 980000,
+                area: 14,
+                floor: 2,
+                rooms: 3,
+                image: "https://via.placeholder.com/400x200?text=Фото+доли",
+                coords: [55.764, 37.605],
+                type: "share"
+            }
+        ];
+
+        // ------------------- ЯНДЕКС КАРТА -------------------
+        let myMap;
+        function initMap() {
+            if (typeof ymaps === 'undefined') {
+                console.error("Яндекс.Карты не загрузились. Проверьте API-ключ.");
+                return;
+            }
+            ymaps.ready(() => {
+                myMap = new ymaps.Map("map", {
+                    center: [55.76, 37.64],
+                    zoom: 11,
+                    controls: ["zoomControl", "fullscreenControl"]
+                });
+                // Добавляем метки
+                properties.forEach(prop => {
+                    const placemark = new ymaps.Placemark(prop.coords, {
+                        balloonContentHeader: prop.title,
+                        balloonContentBody: `<strong>${prop.address}</strong><br/>Цена: ${prop.price.toLocaleString()} ₽<br/>Площадь комнаты: ${prop.area} м²`,
+                        balloonContentFooter: `<a href="#" onclick="alert('Заявка на ${prop.title}')">Записаться</a>`
+                    });
+                    myMap.geoObjects.add(placemark);
+                });
+            });
+        }
+
+        // Загружаем карту после загрузки страницы
+        window.onload = function() {
+            initMap();
+            renderCards();
+            setupCalculators();
+            setupForm();
         };
-      });
-      
-      // Загрузка фото
-      document.getElementById('face-upload').onchange = handleFaceUpload;
-      
-      // Тату
-      document.getElementById('gen-tattoo-btn').onclick = () => {
-        document.getElementById('tattoo-input').classList.toggle('show');
-      };
-      document.getElementById('generate-tattoo').onclick = generateTattoo;
-      document.getElementById('use-fallback').onclick = useFallbackTattoo;
-      
-      // Позиции
-      document.querySelectorAll('.preset-btn').forEach(btn => {
-        btn.onclick = function() {
-          placeTattooAtPreset(this.dataset.pos);
-        };
-      });
-      
-      // Мышь
-      renderer.domElement.addEventListener('mousedown', onMouseDown);
-      renderer.domElement.addEventListener('mousemove', onMouseMove);
-      renderer.domElement.addEventListener('mouseup', onMouseUp);
-      renderer.domElement.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        removeTattooAtMouse(e);
-      });
-      
-      // Экспорт
-      document.getElementById('export-btn').onclick = exportTZ;
-      document.getElementById('reset-btn').onclick = resetAll;
-      document.getElementById('close-modal').onclick = () => {
-        document.getElementById('modal').classList.remove('show');
-      };
-      document.getElementById('copy-tz').onclick = copyTZ;
-    }
-    
-    // ===== ЗАГРУЗКА ФОТО =====
-    function handleFaceUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = canvas.height = 256;
-          const ctx = canvas.getContext('2d');
-          const s = Math.min(img.width, img.height);
-          ctx.drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, 256, 256);
-          // Наложение оттенка кожи
-          ctx.globalCompositeOperation = 'multiply';
-          ctx.fillStyle = skinColor + '30';
-          ctx.fillRect(0,0,256,256);
-          
-          const tex = new THREE.CanvasTexture(canvas);
-          if (facePlane) {
-            facePlane.material.map = tex;
-            facePlane.material.needsUpdate = true;
-            facePlane.visible = true;
-          }
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-    
-    // ===== ТАТУ =====
-    function generateTattoo() {
-      const prompt = document.getElementById('tattoo-prompt').value.trim();
-      if (!prompt) { alert('Введите описание!'); return; }
-      // Для демо сразу показываем фолбэк
-      useFallbackTattoo();
-    }
-    
-    function useFallbackTattoo() {
-      const url = DEMO_TATTOOS[Math.floor(Math.random() * DEMO_TATTOOS.length)];
-      loadTattooImage(url);
-    }
-    
-    function loadTattooImage(url) {
-      const preview = document.getElementById('tattoo-preview');
-      preview.src = url;
-      preview.classList.add('show');
-      
-      // Загружаем как текстуру
-      new THREE.TextureLoader().load(url, tex => {
-        tex.transparent = true;
-        currentTattooImage = tex;
-        placeTattooAtPreset('right-arm');
-      });
-    }
-    
-    function placeTattooAtPreset(name) {
-      if (!currentTattooImage || !model) return;
-      const pos = TATTOO_POSITIONS[name];
-      if (!pos) return;
-      
-      const tattoo = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.35, 0.35),
-        new THREE.MeshBasicMaterial({
-          map: currentTattooImage, transparent: true,
-          side: THREE.DoubleSide, depthTest: false
-        })
-      );
-      
-      const worldPos = model.localToWorld(pos.clone());
-      tattoo.position.copy(worldPos);
-      tattoo.lookAt(camera.position);
-      tattoo.userData = { area: 20 + Math.floor(Math.random()*15), isColor: Math.random()>0.7 };
-      
-      scene.add(tattoo);
-      tattoos.push(tattoo);
-      updateStats();
-    }
-    
-    function updateStats() {
-      if (!tattoos.length) {
-        document.getElementById('ink-amount').textContent = '0';
-        document.getElementById('time-estimate').textContent = '0';
-        return;
-      }
-      const area = tattoos.reduce((s,t)=>s+(t.userData.area||20),0);
-      const hasColor = tattoos.some(t=>t.userData.isColor);
-      const ink = Math.round(area * (hasColor?0.8:0.4) * 10)/10;
-      const time = Math.round(area * 1.5 * 10)/10;
-      document.getElementById('ink-amount').textContent = ink;
-      document.getElementById('time-estimate').textContent = time;
-    }
-    
-    // ===== DRAG =====
-    function onMouseDown(e) {
-      mouse.x = (e.clientX/window.innerWidth)*2-1;
-      mouse.y = -(e.clientY/window.innerHeight)*2+1;
-      raycaster.setFromCamera(mouse, camera);
-      
-      const hits = raycaster.intersectObjects(tattoos);
-      if (hits.length) {
-        selectedTattoo = hits[0].object;
-        isDragging = true;
-        const pt = raycaster.intersectPlane(dragPlane, 
-          new THREE.Ray(camera.position, hits[0].point.clone().sub(camera.position).normalize()));
-        if (pt) dragOffset.copy(selectedTattoo.position).sub(pt);
-        return;
-      }
-      
-      // Клик по модели для новой тату
-      if (currentTattooImage && model) {
-        const hits = raycaster.intersectObject(model, true);
-        if (hits.length) placeTattooAtPoint(hits[0].point);
-      }
-    }
-    
-    function onMouseMove(e) {
-      if (!isDragging || !selectedTattoo) return;
-      mouse.x = (e.clientX/window.innerWidth)*2-1;
-      mouse.y = -(e.clientY/window.innerHeight)*2+1;
-      raycaster.setFromCamera(mouse, camera);
-      const pt = raycaster.intersectPlane(dragPlane,
-        new THREE.Ray(camera.position, new THREE.Vector3(0,0,-1).transformDirection(camera.matrixWorld)));
-      if (pt) {
-        selectedTattoo.position.copy(pt.add(dragOffset));
-        selectedTattoo.lookAt(camera.position);
-      }
-    }
-    
-    function onMouseUp() { isDragging = false; selectedTattoo = null; }
-    
-    function placeTattooAtPoint(pt) {
-      if (!currentTattooImage) return;
-      const tattoo = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.3,0.3),
-        new THREE.MeshBasicMaterial({
-          map: currentTattooImage, transparent: true,
-          side: THREE.DoubleSide, depthTest: false
-        })
-      );
-      tattoo.position.copy(pt);
-      tattoo.lookAt(camera.position);
-      tattoo.userData = { area: 20, isColor: false };
-      scene.add(tattoo);
-      tattoos.push(tattoo);
-      updateStats();
-    }
-    
-    function removeTattooAtMouse(e) {
-      mouse.x = (e.clientX/window.innerWidth)*2-1;
-      mouse.y = -(e.clientY/window.innerHeight)*2+1;
-      raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(tattoos);
-      if (hits.length) {
-        scene.remove(hits[0].object);
-        tattoos = tattoos.filter(t=>t!==hits[0].object);
-        updateStats();
-      }
-    }
-    
-    // ===== ЭКСПОРТ =====
-    function exportTZ() {
-      renderer.render(scene, camera);
-      const screenshot = renderer.domElement.toDataURL('image/png');
-      
-      const gender = document.getElementById('gender').value;
-      const params = `Пол: ${gender==='male'?'М':'Ж'}, Рост: ${modelScale.y.toFixed(2)}, Вес: ${modelScale.x.toFixed(2)}, Цвет: ${skinColor}`;
-      const tattooInfo = tattoos.length ? `Тату: ${tattoos.length} шт.` : 'Без тату';
-      const calc = `Краски: ${document.getElementById('ink-amount').textContent} мл, Время: ${document.getElementById('time-estimate').textContent} ч`;
-      
-      document.getElementById('modal-screenshot').innerHTML = `<img src="${screenshot}">`;
-      document.getElementById('modal-params').textContent = params;
-      document.getElementById('modal-tattoo').textContent = tattooInfo;
-      document.getElementById('modal-calc').textContent = calc;
-      document.getElementById('modal').classList.add('show');
-      
-      window.tzText = `ТЗ на тату:\n${params}\n${tattooInfo}\n${calc}\n\nОтправить мастеру.`;
-    }
-    
-    function copyTZ() {
-      if (window.tzText) {
-        navigator.clipboard.writeText(window.tzText);
-        const btn = document.getElementById('copy-tz');
-        btn.textContent = '✓ Скопировано!';
-        setTimeout(()=>btn.textContent='📋 Копировать',1500);
-      }
-    }
-    
-    function resetAll() {
-      tattoos.forEach(t=>scene.remove(t));
-      tattoos = []; currentTattooImage = null;
-      modelScale = {x:1,y:1,z:1};
-      document.getElementById('height').value = 1;
-      document.getElementById('weight').value = 1;
-      document.getElementById('height-val').textContent = '1.0';
-      document.getElementById('weight-val').textContent = '1.0';
-      document.getElementById('gender').value = 'male';
-      document.querySelectorAll('.skin-color').forEach((c,i)=>c.classList.toggle('active',i===0));
-      skinColor = '#f5d0b8';
-      if (skinMaterial) skinMaterial.color.set(skinColor);
-      if (facePlane) facePlane.visible = false;
-      document.getElementById('tattoo-preview').classList.remove('show');
-      document.getElementById('tattoo-input').classList.remove('show');
-      createModel();
-      updateStats();
-    }
-    
-    // ===== АНИМАЦИЯ =====
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      if (model && !isDragging) model.rotation.y += 0.003;
-      renderer.render(scene, camera);
-    }
-    
-    // ===== ЗАПУСК =====
-    window.addEventListener('load', () => {
-      if (typeof THREE !== 'undefined' && typeof THREE.OrbitControls !== 'undefined') {
-        init();
-      } else {
-        const panel = document.getElementById('debug-panel');
-        panel.className = 'show';
-        panel.innerHTML = '⏳ Загрузка библиотек...<br><small>Если долго — проверьте интернет</small>';
-        // Пробуем инициализировать с задержкой
-        setTimeout(() => {
-          if (typeof THREE !== 'undefined') init();
-          else {
-            panel.innerHTML = '❌ Three.js не загрузился.<br><a href="https://threejs.org" target="_blank" style="color:#fff">Скачайте локально</a>';
-          }
-        }, 3000);
-      }
-    });
-  </script>
+
+        // ------------------- ОТРИСОВКА КАРТОЧЕК -------------------
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            if (!container) return;
+            container.innerHTML = properties.map(prop => `
+                <div class="card">
+                    <img class="card-img" src="${prop.image}" alt="${prop.title}" loading="lazy">
+                    <div class="card-content">
+                        <div class="card-title">${prop.title}</div>
+                        <div class="card-address">${prop.address}</div>
+                        <div class="card-price">${prop.price.toLocaleString()} ₽</div>
+                        <div class="card-details">
+                            <span>${prop.area} м²</span>
+                            <span>${prop.rooms} комн.</span>
+                            <span>${prop.floor} этаж</span>
+                        </div>
+                        <div class="card-tag">Горячее предложение</div>
+                        <button class="btn-outline" style="margin-top:16px; width:100%;" onclick="alert('Заявка на ${prop.title}')">Записаться на просмотр</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ------------------- КАЛЬКУЛЯТОРЫ -------------------
+        function setupCalculators() {
+            // Ремонт
+            const repairBtn = document.getElementById('calcRepairBtn');
+            const areaInput = document.getElementById('areaInput');
+            const repairResult = document.getElementById('repairResult');
+            function updateRepair() {
+                let area = parseFloat(areaInput.value);
+                if (isNaN(area)) area = 0;
+                const rounded = Math.ceil(area);
+                const price = rounded * 45000;
+                repairResult.innerHTML = `Стоимость ремонта: ${price.toLocaleString()} ₽ (площадь округлена до ${rounded} м²)`;
+            }
+            repairBtn.addEventListener('click', updateRepair);
+            updateRepair();
+
+            // Инвестиционный калькулятор
+            const investBtn = document.getElementById('calcInvestBtn');
+            const priceInput = document.getElementById('priceInput');
+            const rentInput = document.getElementById('rentInput');
+            const rentGrowth = document.getElementById('rentGrowth');
+            const priceGrowth = document.getElementById('priceGrowth');
+            const investResult = document.getElementById('investResult');
+
+            function calculateInvest() {
+                let price = parseFloat(priceInput.value);
+                let rent = parseFloat(rentInput.value);
+                let rentG = parseFloat(rentGrowth.value) / 100;
+                let priceG = parseFloat(priceGrowth.value) / 100;
+                if (isNaN(price)) price = 0;
+                if (isNaN(rent)) rent = 0;
+                if (isNaN(rentG)) rentG = 0;
+                if (isNaN(priceG)) priceG = 0;
+
+                let totalRentIncome = 0;
+                let currentPrice = price;
+                let currentRent = rent;
+                let output = "<ul style='text-align:left; font-size:0.9rem;'>";
+                for (let year = 1; year <= 5; year++) {
+                    const yearRentIncome = currentRent * 12;
+                    totalRentIncome += yearRentIncome;
+                    const priceAppreciation = currentPrice * priceG;
+                    currentPrice += priceAppreciation;
+                    output += `<li><strong>Год ${year}:</strong> доход от аренды ${yearRentIncome.toLocaleString()} ₽, стоимость доли ~ ${Math.round(currentPrice).toLocaleString()} ₽</li>`;
+                    currentRent = currentRent * (1 + rentG);
+                }
+                output += `</ul><strong>Итого арендный доход за 5 лет: ${totalRentIncome.toLocaleString()} ₽</strong><br>`;
+                output += `<strong>Стоимость доли через 5 лет: ${Math.round(currentPrice).toLocaleString()} ₽</strong>`;
+                investResult.innerHTML = output;
+            }
+            investBtn.addEventListener('click', calculateInvest);
+            calculateInvest();
+        }
+
+        // ------------------- ФОРМА -------------------
+        function setupForm() {
+            const submitBtn = document.getElementById('submitFormBtn');
+            const nameInput = document.getElementById('userName');
+            const phoneInput = document.getElementById('userPhone');
+            submitBtn.addEventListener('click', () => {
+                const name = nameInput.value.trim();
+                const phone = phoneInput.value.trim();
+                if (!name || !phone) {
+                    alert('Пожалуйста, заполните имя и телефон');
+                    return;
+                }
+                alert(`Спасибо, ${name}! Мы перезвоним вам в ближайшее время.`);
+                // Здесь можно отправить данные на сервер (fetch), но пока просто демо
+                nameInput.value = '';
+                phoneInput.value = '';
+            });
+        }
+
+        // Кнопки навигации
+        document.getElementById('callbackBtn')?.addEventListener('click', () => {
+            document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+        });
+        document.getElementById('heroBtn')?.addEventListener('click', () => {
+            document.getElementById('objects')?.scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
 </body>
 </html>
